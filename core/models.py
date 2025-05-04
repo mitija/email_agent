@@ -19,7 +19,7 @@ class Email(models.Model):
     gmail_message_id = models.CharField(max_length=255, unique=True)
     gmail_thread_id = models.CharField(max_length=255)
     date = models.DateTimeField()
-    sender = models.ManyToManyField(Contact, related_name="sent_emails")
+    sender = models.ForeignKey(Contact, on_delete=models.PROTECT, related_name="sent_emails")
     receiver = models.ManyToManyField(Contact, related_name="received_emails")
     subject = models.CharField(max_length=255)
     content = models.TextField()

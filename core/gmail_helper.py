@@ -59,6 +59,14 @@ class GmailHelper:
         msg = self._find_common_headers(msg)
         return msg
 
+    def fetch_thread(self, thread_id):
+        """ This function fetches a thread from Gmail by its ID."""
+        thread = self.service.users().threads().get(userId='me', id=thread_id).execute()
+        # we will add keys From, Subject, To, Date to the msg object by searching through payload headers
+        for msg in thread['messages']:
+            msg = self._find_common_headers(msg)
+        return thread
+
     def _find_common_headers(self, msg):
         headers = msg.get('payload', {}).get('headers', [])
         for header in headers:
@@ -72,9 +80,10 @@ class GmailHelper:
                 msg['Date'] = header['value']
         return msg
 
+gmail_helper = GmailHelper()
+
 # write a main method that will test the fetch_emails_since method
 if __name__ == "__main__":
-    gmail_helper = GmailHelper()
     # fetch emails since 10 minutes ago
     timestamp = datetime.now() - timedelta(minutes=120)
     emails = gmail_helper.fetch_emails_since(timestamp)
@@ -86,17 +95,17 @@ if __name__ == "__main__":
         thread_ids.add(msg['threadId'])
 
     # then we want to print all the emails for each thread
-    for thread in thread_ids:
-        print("Thread ID: ", thread)
+    for thread_id in thread_ids:
+        print("===> Thread ID: ", thread_id)
         # Fetch all emails in the thread
-        thread_emails = gmail_helper.service.users().threads().get(userId='me', id=thread).execute()
-        for email in thread_emails['messages']:
-            email = gmail_helper._find_common_headers(email)
+        thread = gmail_helper.fetch_thread(thread_id)
+        print("Thread labels", thread.get('labelIds', ''))
+        for email in thread['messages']:
             print("Email ID: ", email['id'])
             print("From: ", email['From'])
             print("To: ", email['To'])
             print("Date: ", email['Date'])
-            print("Tags: ", email.get('labelsId', ''))
+            print("Labels: ", email.get('labelIds', ''))
             print("Subject: ", email['Subject'])
             print("Email Snippet: ", email['snippet'])
             print("\n")
