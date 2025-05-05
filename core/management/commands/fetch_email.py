@@ -90,6 +90,8 @@ def _process_email(message, thread):
         }
     ) # type: ignore[attr-defined]
 
+    thread.emails.add(email_obj) # type: ignore[attr-defined]
+
     # Process tags
     tags = message.get("labelIds", [])
     for tag in tags:
