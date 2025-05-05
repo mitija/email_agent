@@ -59,6 +59,20 @@ class GmailHelper:
         msg = self._find_common_headers(msg)
         return msg
 
+    def fetch_label(self, label_id):
+        """ This function fetches a label from Gmail by its ID. It caches known labels so we don't
+        need to query the Gmail API every time."""
+        # check if the label is already in the cache
+        if hasattr(self, 'labels_cache') and label_id in self.labels_cache:
+            return self.labels_cache[label_id]
+        # if not, fetch it from the API
+        label = self.service.users().labels().get(userId='me', id=label_id).execute() # type: ignore[attr-defined]
+        # cache the label
+        if not hasattr(self, 'labels_cache'):
+            self.labels_cache = {}
+        self.labels_cache[label_id] = label
+        return label
+
     def fetch_thread(self, thread_id):
         """ This function fetches a thread from Gmail by its ID."""
         thread = self.service.users().threads().get(userId='me', id=thread_id).execute()

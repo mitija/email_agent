@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Contact, Email, Tag, Thread, ThreadSummary, Action, SpecificInstruction, SystemParameter
+from .models import Contact, Email, Label, Thread, ThreadSummary, Action, SpecificInstruction, SystemParameter
 from .gmail_helper import gmail_helper
 from datetime import datetime, timedelta
 
@@ -11,14 +11,14 @@ class ContactAdmin(admin.ModelAdmin):
 class EmailAdmin(admin.ModelAdmin):
     list_display = ("date", "sender", "subject")
 
-@admin.register(Tag)
-class TagAdmin(admin.ModelAdmin):
+@admin.register(Label)
+class LabelAdmin(admin.ModelAdmin):
     list_display = ("name",)
 
 @admin.register(Thread)
 class ThreadAdmin(admin.ModelAdmin):
     list_display = ("id",)
-    filter_horizontal = ("emails", "tags")
+    filter_horizontal = ("emails", "labels")
 
 @admin.register(ThreadSummary)
 class ThreadSummaryAdmin(admin.ModelAdmin):
@@ -30,7 +30,7 @@ class ActionAdmin(admin.ModelAdmin):
 
 @admin.register(SpecificInstruction)
 class SpecificInstructionAdmin(admin.ModelAdmin):
-    list_display = ("contact", "tag", "instruction")
+    list_display = ("contact", "label", "instruction")
 
 @admin.register(SystemParameter)
 class SystemParameterAdmin(admin.ModelAdmin):

@@ -1,6 +1,6 @@
 # we will add a command to django manage.py to fetch emails from the gmail api
 from django.core.management.base import BaseCommand
-from core.models import SystemParameter, Thread, Email, Tag, Contact
+from core.models import SystemParameter, Thread, Email, Label, Contact
 from core.gmail_helper import gmail_helper
 from datetime import datetime, timedelta
 import base64
@@ -57,7 +57,7 @@ def _process_email(message, thread):
     """ This method will process one email
     parameters: message - a message returned from Gmail, thread: the Django thread object
     It assumes the thread already exists
-    It will check the tags and create them if they don't exist
+    It will check the labels and create them if they don't exist
     It will save the email to the database
     """
     # Log that we process message id annd subject
@@ -92,12 +92,18 @@ def _process_email(message, thread):
 
     thread.emails.add(email_obj) # type: ignore[attr-defined]
 
-    # Process tags
-    tags = message.get("labelIds", [])
-    for tag in tags:
-        tag_obj, created = Tag.objects.get_or_create(name=tag) # type: ignore[attr-defined]
-        # add the tag to the email object
-        email_obj.tags.add(tag_obj) # type: ignore[attr-defined]
+    # Process labels
+    labels = message.get("labelIds", [])
+    for gmail_label_id in labels:
+        label = gmail_helper.fetch_label(gmail_label_id)
+        label_obj, created = Label.objects.get_or_create(
+                gmail_label_id=label["id"],
+                defaults={
+                    "name" :label["name"],
+                    }
+                ) # type: ignore[attr-defined]
+        # add the label to the email object
+        email_obj.labels.add(label_obj) # type: ignore[attr-defined]
 
     # Process "To"
     to = message.get("To")
@@ -135,7 +141,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         """This will fetch emails from Gmail since the last sync
         For each email, it will check that:
-            - labels (tags) already exist in the database. If not it will create them
+            - labels already exist in the database. If not it will create them
             - thread already exist in the database. If not it will create them; and it will fetch all emails from that thread
             """
         # we retrieve the last sync time. If it does not exists then it default to now - 2 hours

@@ -8,9 +8,10 @@ class Contact(models.Model):
     def __str__(self):
         return self.name or self.email
 
-class Tag(models.Model):
+class Label(models.Model):
     name = models.CharField(max_length=100)
-    rule = models.TextField(help_text="Instructions for AI to assign this tag")
+    gmail_label_id = models.CharField(max_length=100, unique=True)
+    rule = models.TextField(help_text="Instructions for AI to assign this label")
 
     def __str__(self):
         return self.name
@@ -25,7 +26,7 @@ class Email(models.Model):
     subject = models.CharField(max_length=255)
     body = models.TextField()
     snippet = models.TextField()
-    tags = models.ManyToManyField(Tag, blank=True)
+    labels = models.ManyToManyField(Label, blank=True)
 
     def __str__(self):
         return f"{self.subject} - {self.date}"
@@ -33,7 +34,7 @@ class Email(models.Model):
 class Thread(models.Model):
     gmail_thread_id = models.CharField(max_length=255)
     emails = models.ManyToManyField(Email)
-    tags = models.ManyToManyField(Tag, blank=True)
+    labels = models.ManyToManyField(Label, blank=True)
 
     def __str__(self):
         return f"Thread {self.id}"
@@ -67,15 +68,15 @@ class Action(models.Model):
 
 class SpecificInstruction(models.Model):
     contact = models.ForeignKey(Contact, on_delete=models.SET_NULL, null=True, blank=True)
-    tag = models.ForeignKey(Tag, on_delete=models.SET_NULL, null=True, blank=True)
+    label = models.ForeignKey(Label, on_delete=models.SET_NULL, null=True, blank=True)
     instruction = models.TextField()
 
     def __str__(self):
         parts = []
         if self.contact:
             parts.append(f"Contact: {self.contact.name}")
-        if self.tag:
-            parts.append(f"Tag: {self.tag.name}")
+        if self.label:
+            parts.append(f"Tag: {self.label.name}")
         return " | ".join(parts) or "Global Instruction"
 
 class SystemParameter(models.Model):
