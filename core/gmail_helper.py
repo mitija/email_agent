@@ -48,13 +48,13 @@ class GmailHelper:
             timestamp = datetime.now() - timedelta(minutes=10)
 
         # Fetch messages ids from Gmail
-        results = self.service.users().messages().list(userId='me', q=f'after:{int(timestamp.timestamp())}').execute()
+        results = self.service.users().messages().list(userId='me', q=f'after:{int(timestamp.timestamp())}').execute() # type: ignore[attr-defined]
         messages = results.get('messages', [])
         return messages
 
     def fetch_email(self, email_id):
         """ This function fetches a single email from Gmail by its ID."""
-        msg = self.service.users().messages().get(userId='me', id=email_id).execute()
+        msg = self.service.users().messages().get(userId='me', id=email_id).execute() # type: ignore[attr-defined]
         # we will add keys From, Subject, To, Date to the msg object by searching through payload headers
         msg = self._find_common_headers(msg)
         return msg

@@ -20,9 +20,12 @@ class Email(models.Model):
     gmail_thread_id = models.CharField(max_length=255)
     date = models.DateTimeField()
     sender = models.ForeignKey(Contact, on_delete=models.PROTECT, related_name="sent_emails")
-    receiver = models.ManyToManyField(Contact, related_name="received_emails")
+    to = models.ManyToManyField(Contact, related_name="to_emails")
+    cc = models.ManyToManyField(Contact, related_name="cc_emails", blank=True)
     subject = models.CharField(max_length=255)
-    content = models.TextField()
+    body = models.TextField()
+    snippet = models.TextField()
+    tags = models.ManyToManyField(Tag, blank=True)
 
     def __str__(self):
         return f"{self.subject} - {self.date}"
