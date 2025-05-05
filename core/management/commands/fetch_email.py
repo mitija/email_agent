@@ -145,24 +145,30 @@ class Command(BaseCommand):
             - thread already exist in the database. If not it will create them; and it will fetch all emails from that thread
             """
         # we retrieve the last sync time. If it does not exists then it default to now - 2 hours
-        last_sync = SystemParameter.objects.filter(key="last_sync_time").first() # type: ignore[attr-defined]
-        if not last_sync:
-            last_sync = datetime.now() - timedelta(hours=2)
-        else:
-            last_sync = datetime.fromisoformat(last_sync.value)
+        last_sync_obj, created = SystemParameter.objects.get_or_create(
+                key="last_sync_time",
+                defaults= {
+                    "value" : int(datetime.now().timestamp()) - 7200, #2 hours
+                    }
+                ) # type: ignore[attr-defined]
         # log the last sync time
-        print(f"Last sync time: {last_sync}")
+        print(f"Last sync time: {last_sync_obj.value}")
 
         # fetch emails from gmail since last sync
-        emails = gmail_helper.fetch_emails_since(last_sync)
+        emails = gmail_helper.fetch_emails_since(int(last_sync_obj.value) + 1)
         #log the number of emails fetched
-        print(f"Fetched {len(emails)} emails since {last_sync}")
+        print(f"Fetched {len(emails)} emails since {last_sync_obj.value}")
+
+        if not emails:
+            print("No new emails to process")
+            return
 
         # Now for each email we want to check if the thread already exists in the database
         # if not we will create it and fetch all emails from that thread
-        for email in emails:
+        max_timestamp = 0
+        for email_record in emails:
             # check if the thread already exists
-            gmail_thread_id = email.get("threadId")
+            gmail_thread_id = email_record.get("threadId")
             thread, created = Thread.objects.get_or_create(gmail_thread_id=gmail_thread_id) # type: ignore[attr-defined]
             if created:
                 # log that we created a new thread
@@ -171,6 +177,12 @@ class Command(BaseCommand):
                 thread_emails = gmail_helper.fetch_thread(gmail_thread_id)
                 for thread_email in thread_emails['messages']:
                     _process_email(thread_email, thread)
+                    max_timestamp = max(int(thread_email['internalDate']), max_timestamp)
             else:
-                email = gmail_helper.fetch_email(email['id'])
+                email = gmail_helper.fetch_email(email_record['id'])
                 _process_email(email, thread)
+                max_timestamp = max(int(email['internalDate'])/1000, max_timestamp)
+
+        # update the last sync time
+        last_sync_obj.value = max_timestamp
+        last_sync_obj.save()

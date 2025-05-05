@@ -43,12 +43,8 @@ class GmailHelper:
 
     def fetch_emails_since(self, timestamp):
         """ This function fetches email IDs from Gmail since the given timestamp."""
-        #if no timestamp then fetch emails since the last 10 minutes
-        if not timestamp:
-            timestamp = datetime.now() - timedelta(minutes=10)
-
         # Fetch messages ids from Gmail
-        results = self.service.users().messages().list(userId='me', q=f'after:{int(timestamp.timestamp())}').execute() # type: ignore[attr-defined]
+        results = self.service.users().messages().list(userId='me', q=f'after:{int(timestamp)+1}').execute() # type: ignore[attr-defined]
         messages = results.get('messages', [])
         return messages
 
