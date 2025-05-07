@@ -6,19 +6,22 @@ from datetime import datetime, timedelta
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
     list_display = ("name", "email")
+    search_fields = ("name", "email")
 
 @admin.register(Email)
 class EmailAdmin(admin.ModelAdmin):
     list_display = ("date", "sender", "subject")
+    autocomplete_fields = ("sender", "to", "cc", "labels")
 
 @admin.register(Label)
 class LabelAdmin(admin.ModelAdmin):
     list_display = ("name",)
+    search_fields = ("name",)
 
 @admin.register(Thread)
 class ThreadAdmin(admin.ModelAdmin):
     list_display = ("id",)
-    filter_horizontal = ("emails", "labels")
+    autocomplete_fields = ("labels",)
 
 @admin.register(ThreadSummary)
 class ThreadSummaryAdmin(admin.ModelAdmin):
