@@ -3,7 +3,6 @@ from django.core.management.base import BaseCommand
 from core.models import SystemParameter, Thread, Email, Label, Contact
 from core.gmail_helper import gmail_helper
 from datetime import datetime, timedelta
-import base64
 
 def _extract_email_and_name(email):
     """ This method will extract the email and name from the email string
@@ -16,42 +15,6 @@ def _extract_email_and_name(email):
     else:
         name = email.strip()
     return (name, email)
-
-
-def _extract_body_from_gmail_message(payload):
-    text_body = None
-    html_body = None
-
-    def extract_parts(parts):
-        nonlocal text_body, html_body
-        for part in parts:
-            mime_type = part.get("mimeType")
-            body = part.get("body", {})
-            data = body.get("data")
-            if data:
-                decoded = base64.urlsafe_b64decode(data.encode("utf-8")).decode("utf-8", errors="replace")
-                if mime_type == "text/html" and not html_body:
-                    html_body = decoded
-                elif mime_type == "text/plain" and not text_body:
-                    text_body = decoded
-            # Recursively handle nested multiparts
-            if "parts" in part:
-                extract_parts(part["parts"])
-
-    if payload.get("mimeType", "").startswith("multipart/"):
-        extract_parts(payload["parts"])
-    else:
-        # Single-part message
-        data = payload.get("body", {}).get("data")
-        if data:
-            decoded = base64.urlsafe_b64decode(data.encode("utf-8")).decode("utf-8", errors="replace")
-            if payload["mimeType"] == "text/html":
-                html_body = decoded
-            elif payload["mimeType"] == "text/plain":
-                text_body = decoded
-
-    return html_body or text_body or ""
-
 
 def _process_email(message, thread):
     """ This method will process one email
@@ -76,7 +39,6 @@ def _process_email(message, thread):
 
     # Then we process the message
     message_date = datetime.fromtimestamp(int(message['internalDate']) / 1000)
-    message_body = _extract_body_from_gmail_message(message['payload'])
     print(f"Processing message date: %s --> %s" % (message['Date'], message_date.isoformat()))
     email_obj, created = Email.objects.get_or_create( 
         gmail_message_id=message['id'],
@@ -86,7 +48,7 @@ def _process_email(message, thread):
             "subject": message['Subject'],
             "snippet": message['snippet'],
             "sender": sender_obj,
-            "body": message_body,
+            "body": message['Body'],
         }
     ) # type: ignore[attr-defined]
 
@@ -106,7 +68,7 @@ def _process_email(message, thread):
         email_obj.labels.add(label_obj) # type: ignore[attr-defined]
 
     # Process "To"
-    to = message.get("To")
+    to = message.get("To", "")
     for receiver in to.split(","):
         receiver_name, receiver_email = _extract_email_and_name(receiver)
         # check if the receiver exists in the database and if not we create it

@@ -4,7 +4,44 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta
-import json
+import bleach
+import markdownify
+import base64
+
+
+def _extract_body_from_gmail_message(payload):
+    text_body = None
+    html_body = None
+
+    def extract_parts(parts):
+        nonlocal text_body, html_body
+        for part in parts:
+            mime_type = part.get("mimeType")
+            body = part.get("body", {})
+            data = body.get("data")
+            if data:
+                decoded = base64.urlsafe_b64decode(data.encode("utf-8")).decode("utf-8", errors="replace")
+                if mime_type == "text/html" and not html_body:
+                    html_body = decoded
+                elif mime_type == "text/plain" and not text_body:
+                    text_body = decoded
+            # Recursively handle nested multiparts
+            if "parts" in part:
+                extract_parts(part["parts"])
+
+    if payload.get("mimeType", "").startswith("multipart/"):
+        extract_parts(payload["parts"])
+    else:
+        # Single-part message
+        data = payload.get("body", {}).get("data")
+        if data:
+            decoded = base64.urlsafe_b64decode(data.encode("utf-8")).decode("utf-8", errors="replace")
+            if payload["mimeType"] == "text/html":
+                md_body = markdownify.markdown(bleach.clean(decoded, strip=True))
+            elif payload["mimeType"] == "text/plain":
+                text_body = decoded
+
+    return text_body or md_body or ""
 
 # this file will create a class calls GmailHelper,
 # it will handle the authentication and fetching of emails and threads from Gmail
@@ -88,6 +125,9 @@ class GmailHelper:
                 msg['To'] = header['value']
             elif header['name'] == 'Date':
                 msg['Date'] = header['value']
+
+        msg['Body'] = _extract_body_from_gmail_message(msg['payload'])
+
         return msg
 
 gmail_helper = GmailHelper()
