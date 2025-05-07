@@ -24,7 +24,7 @@ class ThreadAdmin(admin.ModelAdmin):
     autocomplete_fields = ("labels",)
     readonly_fields = ("subject", "date")
 
-    #change_form_template = "admin/thread_form.html"
+    change_form_template = "admin/thread_form.html"
 
 @admin.register(ThreadSummary)
 class ThreadSummaryAdmin(admin.ModelAdmin):

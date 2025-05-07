@@ -1,0 +1,20 @@
+{% extends "admin/change_form.html" %}
+
+{% block content %}
+  <h1>{{ title }}</h1>
+
+  <p><strong>Object:</strong> {{ original }}</p>
+  <p><strong>Model:</strong> {{ opts.verbose_name }}</p>
+
+  {% if errors %}
+    <div class="errorlist">{{ errors }}</div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <!-- Your custom fields here -->
+    <input type="text" name="custom_title" value="{{ original.title }}">
+    <textarea name="custom_summary">{{ original.summary }}</textarea>
+    <button type="submit">Save</button>
+  </form>
+{% endblock %}
