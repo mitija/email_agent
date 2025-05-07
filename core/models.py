@@ -36,7 +36,24 @@ class Thread(models.Model):
     emails = models.ManyToManyField(Email)
     labels = models.ManyToManyField(Label, blank=True)
 
+    #subject and date are readonly fields. They are set when the first email is added to the thread
+    # and are equal to the date and subject of the first email
+
+    @property
+    def subject(self):
+        if self.emails.exists(): # type: ignore[attr-defined]
+            return self.emails.first().subject # type: ignore[attr-defined]
+        return ""
+
+    @property
+    def date(self):
+        if self.emails.exists(): # type: ignore[attr-defined]
+            return self.emails.first().date # type: ignore[attr-defined]
+        return None
+
     def __str__(self):
+        if self.emails.exists():
+            return f"Thread {self.emails.first().subject} - {self.emails.first().date}"
         return f"Thread {self.id}"
 
 class ThreadSummary(models.Model):

@@ -20,8 +20,11 @@ class LabelAdmin(admin.ModelAdmin):
 
 @admin.register(Thread)
 class ThreadAdmin(admin.ModelAdmin):
-    list_display = ("id",)
+    list_display = ("date","subject")
     autocomplete_fields = ("labels",)
+    readonly_fields = ("subject", "date")
+
+    #change_form_template = "admin/thread_form.html"
 
 @admin.register(ThreadSummary)
 class ThreadSummaryAdmin(admin.ModelAdmin):
