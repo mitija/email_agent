@@ -51,6 +51,10 @@ class Thread(models.Model):
             return self.emails.first().date # type: ignore[attr-defined]
         return None
 
+    @property
+    def number_of_emails(self):
+        return self.emails.count() # type: ignore[attr-defined]
+
     def __str__(self):
         if self.emails.exists():
             return f"Thread {self.emails.first().subject} - {self.emails.first().date}"
