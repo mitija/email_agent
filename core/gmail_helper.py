@@ -29,6 +29,8 @@ def _extract_body_from_gmail_message(payload):
             if "parts" in part:
                 extract_parts(part["parts"])
 
+    md_body = None
+    text_body = None
     if payload.get("mimeType", "").startswith("multipart/"):
         extract_parts(payload["parts"])
     else:
@@ -37,7 +39,7 @@ def _extract_body_from_gmail_message(payload):
         if data:
             decoded = base64.urlsafe_b64decode(data.encode("utf-8")).decode("utf-8", errors="replace")
             if payload["mimeType"] == "text/html":
-                md_body = markdownify.markdown(bleach.clean(decoded, strip=True))
+                md_body = markdownify.markdownify(bleach.clean(decoded, strip=True))
             elif payload["mimeType"] == "text/plain":
                 text_body = decoded
 
