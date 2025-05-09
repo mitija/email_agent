@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 from core.models import SystemParameter, Thread, Email, Label, Contact
 from core.gmail_helper import gmail_helper
 from datetime import datetime, timedelta
+from pytz import timezone
 
 def _extract_email_and_name(email):
     """ This method will extract the email and name from the email string
@@ -38,7 +39,10 @@ def _process_email(message, thread):
             )
 
     # Then we process the message
+    # get rid of the warning RuntimeWarning: DateTimeField Email.date received a naive datetime (2025-05-08 12:07:46) while time zone support is active.
     message_date = datetime.fromtimestamp(int(message['internalDate']) / 1000)
+    if message_date.tzinfo is None:
+        message_date = message_date.replace(tzinfo=timezone('UTC'))
     print(f"Processing message date: %s --> %s" % (message['Date'], message_date.isoformat()))
     email_obj, created = Email.objects.get_or_create( 
         gmail_message_id=message['id'],
@@ -110,7 +114,7 @@ class Command(BaseCommand):
         last_sync_obj, created = SystemParameter.objects.get_or_create(
                 key="last_sync_time",
                 defaults= {
-                    "value" : int(datetime.now().timestamp()) - 7200, #2 hours
+                    "value" : int(datetime.now().timestamp()) - 3600*12, #2 hours
                     }
                 ) # type: ignore[attr-defined]
         # log the last sync time
@@ -146,5 +150,5 @@ class Command(BaseCommand):
                 max_timestamp = max(int(email['internalDate'])/1000, max_timestamp)
 
         # update the last sync time
-        last_sync_obj.value = max_timestamp
+        last_sync_obj.value = int(max_timestamp)
         last_sync_obj.save()
