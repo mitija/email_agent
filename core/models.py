@@ -4,6 +4,7 @@ from django.db import models
 class Contact(models.Model):
     name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
+    ai_context = models.TextField(blank=True, null=True, help_text="Context for AI to understand this contact")
 
     def __str__(self):
         return self.name or self.email
@@ -11,7 +12,7 @@ class Contact(models.Model):
 class Label(models.Model):
     name = models.CharField(max_length=100)
     gmail_label_id = models.CharField(max_length=100, unique=True)
-    rule = models.TextField(help_text="Instructions for AI to assign this label")
+    ai_context = models.TextField(blank=True, null=True, help_text="Context for AI to understand this label")
 
     def __str__(self):
         return self.name
