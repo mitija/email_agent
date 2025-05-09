@@ -30,8 +30,28 @@ class LangGraphHelper:
         """
         llm = Ollama(model="gemma3:4b-it-qat")
         conversation = self._thread_messages(thread)
+        prompt_text = """
+This is not an interactive session. You must read this conversation and assess:
+- a summary
+- participants and what we can infer about these participants
+- what action to be done: Ignore, Need to Know, Need to respond
+- reason for providing that action recommendation
+
+Here is the conversation:
+{conversation}
+
+Please return your answer strictly in JSON format using the following schema:
+{{
+  "action": "IGNORE | NEED_TO_KNOW | NEED_TO_RESPOND",
+  "summary": "a short summary of the conversation",
+  "participants: [ {{ "email": "email address", "relevant information": "relevant information about this person gained from the thread" }}, ],
+    "rationale": "a short explanation of why you chose this action"
+}}
+            """
+
+        #The below does not work - how to fix it
         prompt = PromptTemplate.from_template(
-            "This is not an interactive session. You must provide a summary of this conversation - no analysis or interpretation is required, just a summary of the content:\n{conversation}."
+                prompt_text,
         )
         summary = llm.invoke(prompt.format(conversation=conversation))
         return summary
