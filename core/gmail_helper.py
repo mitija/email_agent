@@ -82,9 +82,13 @@ class GmailHelper:
 
     def fetch_emails_since(self, timestamp):
         """ This function fetches email IDs from Gmail since the given timestamp."""
-        # Fetch messages ids from Gmail
+        # Fetch messages ids from Gmail. Handle the next page token if needed
         results = self.service.users().messages().list(userId='me', q=f'after:{int(timestamp)+1}').execute() # type: ignore[attr-defined]
         messages = results.get('messages', [])
+        while 'nextPageToken' in results:
+            page_token = results['nextPageToken']
+            results = self.service.users().messages().list(userId='me', q=f'after:{int(timestamp)+1}', pageToken=page_token).execute() # type: ignore[attr-defined]
+            messages.extend(results.get('messages', []))
         return messages
 
     def fetch_email(self, email_id):
