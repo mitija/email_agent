@@ -12,10 +12,11 @@
 
   <form method="post">
     {% csrf_token %}
-    <!-- Your custom fields here -->
-    <input type="text" name="custom_title" value="{{ original.title }}">
-    <textarea name="custom_summary">{{ original.summary }}</textarea>
     <!-- we want to show the thread's messages -->
+    {% if original.last_email.threadsummary.summary %}
+      <h2>Last summary</h2>
+      <p>{{original.last_email.threadsummary}}</p>
+    {% endif %}
     <h2>Emails</h2>
     <ul>
       {% for email in original.email_set.all %}

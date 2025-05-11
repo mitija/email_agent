@@ -30,5 +30,13 @@ class Command(BaseCommand):
         summary = langgraph_helper.create_thread_summary(thread)
         print(f"Thread Summary: {summary}")
 
+        # We create a ThreadSummary object for each thread
+        thread_summary = ThreadSummary.objects.create(
+            thread=thread,
+            email=thread.last_email,
+            summary=summary
+        )
+
+
 
 
