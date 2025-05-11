@@ -60,7 +60,8 @@ class Thread(models.Model):
     def __str__(self):
         if self.email_set.exists(): # type: ignore[attr-defined]
             return f"Thread {self.email_set.first().subject} - {self.email_set.first().date}" # type: ignore[attr-defined]
-        return f"Thread {self.id}"
+        return f"Thread {self.id}" # type: ignore[attr-defined]
+
 
 class ThreadSummary(models.Model):
     thread = models.OneToOneField(Thread, on_delete=models.CASCADE)
