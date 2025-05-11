@@ -13,7 +13,7 @@ class LangGraphHelper:
         Extract messages from the thread.
         """
         messages = []
-        for email in thread.emails.all():
+        for email in thread.email_set.all():
             # Assuming email has a 'body' attribute
             # We want to truncate the body to the first occurence of "On.*wrote:"
             # to avoid including the whole email thread in the summary
@@ -21,7 +21,13 @@ class LangGraphHelper:
             # This is a simple regex to find the first occurrence of "On.*wrote:"
             # and truncate the body to that point
             truncated_body = re.sub(r"On.*wrote:", "", email.body, count=1)
+            messages.append("From: %s <%s>: " % (email.sender.name, email.sender.email))
+            messages.append("To: %s: " % email.to)
+            messages.append("Date: %s: " % email.date)
+            messages.append("Labels: %s: " % " ".join([l.name for l in email.labels.all()]))
+            messages.append("Subject: %s: " % email.subject)
             messages.append(truncated_body)
+            messages.append("----")
         return '\n'.join(messages)
 
     def create_thread_summary(self, thread):
@@ -53,6 +59,8 @@ Please return your answer strictly in JSON format using the following schema:
         prompt = PromptTemplate.from_template(
                 prompt_text,
         )
+        text = prompt.format(conversation=conversation)
+        print("Prompt: ", text)
         summary = llm.invoke(prompt.format(conversation=conversation))
         return summary
 
