@@ -43,23 +43,23 @@ class Thread(models.Model):
 
     @property
     def subject(self):
-        if self.emails.exists(): # type: ignore[attr-defined]
-            return self.emails.first().subject # type: ignore[attr-defined]
+        if self.email_set.exists(): # type: ignore[attr-defined]
+            return self.email_set.first().subject # type: ignore[attr-defined]
         return ""
 
     @property
     def date(self):
-        if self.emails.exists(): # type: ignore[attr-defined]
-            return self.emails.first().date # type: ignore[attr-defined]
+        if self.email_set.exists(): # type: ignore[attr-defined]
+            return self.email_set.first().date # type: ignore[attr-defined]
         return None
 
     @property
     def number_of_emails(self):
-        return self.emails.count() # type: ignore[attr-defined]
+        return self.email_set.count() # type: ignore[attr-defined]
 
     def __str__(self):
-        if self.emails.exists():
-            return f"Thread {self.emails.first().subject} - {self.emails.first().date}"
+        if self.email_set.exists(): # type: ignore[attr-defined]
+            return f"Thread {self.email_set.first().subject} - {self.email_set.first().date}" # type: ignore[attr-defined]
         return f"Thread {self.id}"
 
 class ThreadSummary(models.Model):
