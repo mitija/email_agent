@@ -53,10 +53,13 @@ def _process_email(message, thread):
             "snippet": message['snippet'],
             "sender": sender_obj,
             "body": message['Body'],
+            "thread": thread,
         }
     ) # type: ignore[attr-defined]
 
-    thread.emails.add(email_obj) # type: ignore[attr-defined]
+    thread.last_email = email_obj
+    thread.save() # type: ignore[attr-defined]
+
 
     # Process labels
     labels = message.get("labelIds", [])
