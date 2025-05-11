@@ -42,6 +42,7 @@ def _extract_body_from_gmail_message(payload):
                 md_body = markdownify.markdownify(bleach.clean(decoded, strip=True))
             elif payload["mimeType"] == "text/plain":
                 text_body = decoded
+    body = text_body or md_body
 
     return text_body or md_body or ""
 
@@ -83,7 +84,7 @@ class GmailHelper:
     def fetch_emails_since(self, timestamp):
         """ This function fetches email IDs from Gmail since the given timestamp."""
         # Fetch messages ids from Gmail. Handle the next page token if needed
-        results = self.service.users().messages().list(userId='me', q=f'after:{int(timestamp)+1}').execute() # type: ignore[attr-defined]
+        results = self.service.users().messages().list(userId='me', q=f'after:{int(timestamp)+1}', maxResults = 10).execute() # type: ignore[attr-defined]
         messages = results.get('messages', [])
         while 'nextPageToken' in results:
             page_token = results['nextPageToken']
