@@ -28,14 +28,15 @@ class Email(models.Model):
     body = models.TextField()
     snippet = models.TextField()
     labels = models.ManyToManyField(Label, blank=True)
+    thread = models.ForeignKey("Thread", on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f"{self.subject} - {self.date}"
 
 class Thread(models.Model):
     gmail_thread_id = models.CharField(max_length=255)
-    emails = models.ManyToManyField(Email)
     labels = models.ManyToManyField(Label, blank=True)
+    last_email = models.ForeignKey(Email, on_delete=models.SET_NULL, null=True, blank=True, related_name="last_email")
 
     #subject and date are readonly fields. They are set when the first email is added to the thread
     # and are equal to the date and subject of the first email
@@ -62,8 +63,8 @@ class Thread(models.Model):
         return f"Thread {self.id}"
 
 class ThreadSummary(models.Model):
-    thread = models.ForeignKey(Thread, on_delete=models.CASCADE)
-    email = models.ForeignKey(Email, on_delete=models.CASCADE)
+    thread = models.OneToOneField(Thread, on_delete=models.CASCADE)
+    email = models.OneToOneField(Email, on_delete=models.CASCADE)
     summary = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
