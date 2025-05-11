@@ -3,7 +3,7 @@
 This module provides a helper class for LangGraph, which is used to create summaries of email threads.
 and other things
 """
-from langchain_community.llms import Ollama
+from langchain_ollama import OllamaLLM
 from langchain.prompts import PromptTemplate
 import re
 
@@ -28,12 +28,12 @@ class LangGraphHelper:
         """
         Create a summary of the thread using LangGraph.
         """
-        llm = Ollama(model="gemma3:4b-it-qat")
+        llm = OllamaLLM(model="gemma3:4b-it-qat")
         conversation = self._thread_messages(thread)
         prompt_text = """
 This is not an interactive session. You must read this conversation and assess:
 - a summary
-- participants and what we can infer about these participants
+- participants and what we can infer about these participants, in particular the company they work for, their job, and their role in the discussion
 - what action to be done: Ignore, Need to Know, Need to respond
 - reason for providing that action recommendation
 
