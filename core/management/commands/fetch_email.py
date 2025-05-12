@@ -146,7 +146,8 @@ class Command(BaseCommand):
                 thread_emails = gmail_helper.fetch_thread(gmail_thread_id)
                 for thread_email in thread_emails['messages']:
                     _process_email(thread_email, thread)
-                    max_timestamp = max(int(thread_email['internalDate'])/1000, max_timestamp)
+                    # We don't update max timestamp for threaded emails as this may fetch newer emails and we don't want to miss emails in case the process stops in the middle
+                    # max_timestamp = max(int(thread_email['internalDate'])/1000, max_timestamp)
             else:
                 email = gmail_helper.fetch_email(email_record['id'])
                 _process_email(email, thread)
