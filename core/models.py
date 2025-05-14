@@ -1,18 +1,21 @@
 from django.db import models
+import re
 
 # Create your models here.
 class Contact(models.Model):
     name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
-    ai_context = models.TextField(blank=True, null=True, help_text="Context for AI to understand this contact")
+    knowledge = models.TextField(blank=True, null=True, help_text="Context for AI to understand this contact")
 
     def __str__(self):
+        if self.name and self.email:
+            return f"{self.name} <{self.email}>"
         return self.name or self.email
 
 class Label(models.Model):
     name = models.CharField(max_length=100)
     gmail_label_id = models.CharField(max_length=100, unique=True)
-    ai_context = models.TextField(blank=True, null=True, help_text="Context for AI to understand this label")
+    label_knowledge = models.TextField(blank=True, null=True, help_text="Context for AI to understand this label")
 
     def __str__(self):
         return self.name
@@ -30,8 +33,14 @@ class Email(models.Model):
     labels = models.ManyToManyField(Label, blank=True)
     thread = models.ForeignKey("Thread", on_delete=models.SET_NULL, null=True, blank=True)
 
+    @property
+    def truncated_body(self):
+        """ This property returns the body of the email without the quoted text from previous emails."""
+        truncated_body = re.sub(r"On.*wrote:", "", self.body, count=1)
+        return truncated_body
+
     def __str__(self):
-        return f"{self.subject} - {self.date}"
+        return f"{self.subject} - {self.date} - from {self.sender}"
 
 class Thread(models.Model):
     gmail_thread_id = models.CharField(max_length=255)
@@ -52,6 +61,17 @@ class Thread(models.Model):
         if self.email_set.exists(): # type: ignore[attr-defined]
             return self.email_set.first().date # type: ignore[attr-defined]
         return None
+
+    @property
+    def participants(self):
+        participants = set()
+        for email in self.email_set.all(): # type: ignore[attr-defined]
+            participants.add(email.sender)
+            for receiver in email.to.all():
+                participants.add(receiver)
+            for cc in email.cc.all():
+                participants.add(cc)
+        return list(participants)
 
     @property
     def number_of_emails(self):
