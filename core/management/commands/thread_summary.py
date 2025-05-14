@@ -18,13 +18,13 @@ class Command(BaseCommand):
         threads = Thread.objects.filter(
                 last_email__labels__name="CATEGORY_PERSONAL",
                 last_email__threadsummary__isnull=True
-        ).distinct()
+        ).distinct() # type: ignore[attr-defined]
 
         thread = threads.first() # we will only process the first thread for now
         if not thread:
-            self.stdout.write(self.style.SUCCESS("No threads found"))
+            self.stdout.write(self.style.SUCCESS("No threads found")) # type: ignore[attr-defined]
             return
-        self.stdout.write(self.style.SUCCESS(f"Thread ID: {thread.id} - Subject: {thread.subject} - Date: {thread.date}"))
+        self.stdout.write(self.style.SUCCESS(f"Thread ID: {thread.id} - Subject: {thread.subject} - Date: {thread.date}")) # type: ignore[attr-defined]
 
         # Now we create a summary for the thread
         summary = langgraph_helper.create_thread_summary(thread)
