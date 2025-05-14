@@ -90,9 +90,10 @@ class GmailHelper:
             page_token = results['nextPageToken']
             results = self.service.users().messages().list(userId='me', q=f'after:{int(timestamp)+1}', pageToken=page_token).execute() # type: ignore[attr-defined]
             messages.extend(results.get('messages', []))
-    
-        # We want to sort messages by date from oldest to newest
-        messages.sort(key=lambda x: x['internalDate'])
+
+        # We want to reverse the order of the messages so that the oldest messages are first
+        messages.reverse()
+
         return messages
 
     def fetch_email(self, email_id):
