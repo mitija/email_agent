@@ -1,8 +1,6 @@
 from django.contrib import admin
 from .models import Contact, Email, Label, Thread, ThreadSummary, Action, SpecificInstruction, SystemParameter
-from .gmail_helper import gmail_helper
 from .langgraph_helper import langgraph_helper
-from datetime import datetime, timedelta
 
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
