@@ -84,8 +84,8 @@ class Thread(models.Model):
 
 
 class ThreadSummary(models.Model):
-    thread = models.OneToOneField(Thread, on_delete=models.CASCADE)
-    email = models.OneToOneField(Email, on_delete=models.CASCADE)
+    thread = models.ForeignKey(Thread, on_delete=models.CASCADE)
+    email = models.ForeignKey(Email, on_delete=models.CASCADE)
     summary = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
