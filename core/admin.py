@@ -22,7 +22,7 @@ def create_thread_summary(modeladmin, request, queryset):
     for thread in queryset:
         # We log the names of the thread included on print
         print(f"Thread ID: {thread.id} - Subject: {thread.subject} - Date: {thread.date}")
-        summary = langgraph_helper.create_thread_summary(thread)
+        summary = langgraph_helper.invoke({"thread":thread})
         # We create a ThreadSummary object for each thread
         thread_summary = ThreadSummary.objects.create(
             thread=thread,

@@ -27,7 +27,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"Thread ID: {thread.id} - Subject: {thread.subject} - Date: {thread.date}")) # type: ignore[attr-defined]
 
         # Now we create a summary for the thread
-        summary = langgraph_helper.create_thread_summary(thread)
+        summary = langgraph_helper.invoke({"thread": thread})
         print(f"Thread Summary: {summary}")
 
         # We create a ThreadSummary object for each thread
