@@ -4,6 +4,7 @@ from core.models import SystemParameter, Thread, Email, Label, Contact
 from core.gmail_helper import gmail_helper
 from datetime import datetime, timedelta
 from pytz import timezone
+import re
 
 def _extract_email_and_name(email):
     """ This method will extract the email and name from the email string
@@ -15,6 +16,12 @@ def _extract_email_and_name(email):
         email = email.split("<")[1].split(">")[0].strip()
     else:
         name = email.strip()
+    # remove any non-ascii characters
+    name = name.encode('ascii', 'ignore').decode('ascii')
+    email = email.encode('ascii', 'ignore').decode('ascii')
+    # remove double spaces in name and hyphens
+    name = re.sub(r'\s+', ' ', name)
+    name = re.sub(r'-', '', name)
     return (name, email)
 
 def _process_email(message, thread):
@@ -28,8 +35,8 @@ def _process_email(message, thread):
     print(f"Processing message id: {message['id']} from: {message['From']} subject: {message['Subject']}")
 
     # We check if the sender exists in the database and if not we create it
-    sender_email = message.get("From")
-    sender_name, sender_email = _extract_email_and_name(sender_email)
+    sender_str = message.get("From")
+    sender_name, sender_email = _extract_email_and_name(sender_str)
 
     sender_obj, created = Contact.objects.get_or_create(
             email = sender_email,
@@ -52,6 +59,7 @@ def _process_email(message, thread):
             "subject": message['Subject'],
             "snippet": message['snippet'],
             "sender": sender_obj,
+            "sender_str": sender_str,
             "body": message['Body'],
             "thread": thread,
         }

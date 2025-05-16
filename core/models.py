@@ -24,6 +24,7 @@ class Email(models.Model):
     gmail_message_id = models.CharField(max_length=255, unique=True)
     gmail_thread_id = models.CharField(max_length=255)
     date = models.DateTimeField()
+    sender_str = models.CharField(max_length=255)
     sender = models.ForeignKey(Contact, on_delete=models.PROTECT, related_name="sent_emails")
     to = models.ManyToManyField(Contact, related_name="to_emails")
     cc = models.ManyToManyField(Contact, related_name="cc_emails", blank=True)
