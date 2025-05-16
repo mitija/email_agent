@@ -2,15 +2,29 @@ from django.db import models
 import re
 
 # Create your models here.
-class Contact(models.Model):
-    name = models.CharField(max_length=255)
+class EmailAddress(models.Model):
     email = models.EmailField(unique=True)
-    knowledge = models.TextField(blank=True, null=True, help_text="Context for AI to understand this contact")
+    is_active = models.BooleanField(default=True)
+    is_generic = models.BooleanField(default=False, help_text="Whether this is a generic email (e.g. no-reply@company.com)")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        if self.name and self.email:
-            return f"{self.name} <{self.email}>"
-        return self.name or self.email
+        return self.email
+
+class Contact(models.Model):
+    name = models.CharField(max_length=255)
+    emails = models.ManyToManyField(EmailAddress, related_name='contacts')
+    knowledge = models.TextField(blank=True, null=True, help_text="Context for AI to understand this contact")
+
+    @property
+    def primary_email(self):
+        return self.emails.first()
+
+    def __str__(self):
+        if self.name and self.primary_email:
+            return f"{self.name} <{self.primary_email}>"
+        return self.name or self.primary_email
 
 class Label(models.Model):
     name = models.CharField(max_length=100)
@@ -26,8 +40,8 @@ class Email(models.Model):
     date = models.DateTimeField()
     sender_str = models.CharField(max_length=255)
     sender = models.ForeignKey(Contact, on_delete=models.PROTECT, related_name="sent_emails")
-    to = models.ManyToManyField(Contact, related_name="to_emails")
-    cc = models.ManyToManyField(Contact, related_name="cc_emails", blank=True)
+    to_contacts = models.ManyToManyField(Contact, related_name="to_emails")
+    cc_contacts = models.ManyToManyField(Contact, related_name="cc_emails", blank=True)
     subject = models.CharField(max_length=255)
     body = models.TextField()
     snippet = models.TextField()

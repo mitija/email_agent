@@ -1,16 +1,25 @@
 from django.contrib import admin
-from .models import Contact, Email, Label, Thread, ThreadSummary, Action, SpecificInstruction, SystemParameter
+from .models import Contact, Email, Label, Thread, ThreadSummary, Action, SpecificInstruction, SystemParameter, EmailAddress
 from .langgraph_helper import langgraph_helper
+
+@admin.register(EmailAddress)
+class EmailAddressAdmin(admin.ModelAdmin):
+    list_display = ('email', 'is_generic', 'is_active')
+    search_fields = ('email',)
+    list_filter = ('is_generic', 'is_active')
 
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
-    list_display = ("name", "email")
-    search_fields = ("name", "email")
+    list_display = ('name', 'primary_email')
+    search_fields = ('name', 'emails__email')
+    filter_horizontal = ('emails',)
 
 @admin.register(Email)
 class EmailAdmin(admin.ModelAdmin):
-    list_display = ("date", "sender", "subject")
-    autocomplete_fields = ("sender", "to", "cc", "labels")
+    list_display = ('date', 'sender_str', 'subject')
+    search_fields = ('subject', 'sender_str', 'sender__name')
+    autocomplete_fields = ('sender', 'to_contacts', 'cc_contacts', 'labels')
+    list_filter = ('date',)
 
 @admin.register(Label)
 class LabelAdmin(admin.ModelAdmin):

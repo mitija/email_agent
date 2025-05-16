@@ -1,6 +1,6 @@
 # we will add a command to django manage.py to fetch emails from the gmail api
 from django.core.management.base import BaseCommand
-from core.models import SystemParameter, Thread, Email, Label, Contact
+from core.models import SystemParameter, Thread, Email, Label, Contact, EmailAddress
 from core.gmail_helper import gmail_helper
 from datetime import datetime, timedelta
 from pytz import timezone
@@ -24,6 +24,31 @@ def _extract_email_and_name(email):
     name = re.sub(r'-', '', name)
     return (name, email)
 
+def _get_or_create_email_and_contact(email_str):
+    """Helper function to get or create both EmailAddress and Contact objects"""
+    name, email = _extract_email_and_name(email_str)
+    
+    # First get or create the EmailAddress
+    email_obj, _ = EmailAddress.objects.get_or_create(
+        email=email
+    )
+    
+    # Then try to find an existing contact with this email
+    existing_contact = Contact.objects.filter(emails=email_obj).first()
+    
+    if existing_contact:
+        # Update name if it was empty
+        if not existing_contact.name and name:
+            existing_contact.name = name
+            existing_contact.save()
+        contact = existing_contact
+    else:
+        # Create new contact if none exists
+        contact = Contact.objects.create(name=name)
+        contact.emails.add(email_obj)
+    
+    return email_obj, contact
+
 def _process_email(message, thread):
     """ This method will process one email
     parameters: message - a message returned from Gmail, thread: the Django thread object
@@ -31,86 +56,67 @@ def _process_email(message, thread):
     It will check the labels and create them if they don't exist
     It will save the email to the database
     """
-    # Log that we process message id annd subject
+    # Log that we process message id and subject
     print(f"Processing message id: {message['id']} from: {message['From']} subject: {message['Subject']}")
 
-    # We check if the sender exists in the database and if not we create it
+    # Process sender
     sender_str = message.get("From")
-    sender_name, sender_email = _extract_email_and_name(sender_str)
-
-    sender_obj, created = Contact.objects.get_or_create(
-            email = sender_email,
-            defaults = {
-                "name": sender_name
-                }
-            )
+    sender_email_obj, sender_contact = _get_or_create_email_and_contact(sender_str)
 
     # Then we process the message
-    # get rid of the warning RuntimeWarning: DateTimeField Email.date received a naive datetime (2025-05-08 12:07:46) while time zone support is active.
     message_date = datetime.fromtimestamp(int(message['internalDate']) / 1000)
     if message_date.tzinfo is None:
         message_date = message_date.replace(tzinfo=timezone('UTC'))
     print(f"Processing message date: %s --> %s" % (message['Date'], message_date.isoformat()))
+    
     email_obj, created = Email.objects.get_or_create( 
         gmail_message_id=message['id'],
         defaults= {
-            "gmail_thread_id" : thread.gmail_thread_id,
+            "gmail_thread_id": thread.gmail_thread_id,
             "date": message_date,
             "subject": message['Subject'],
             "snippet": message['snippet'],
-            "sender": sender_obj,
+            "sender_email": sender_email_obj,
+            "sender": sender_contact,
             "sender_str": sender_str,
             "body": message['Body'],
             "thread": thread,
         }
-    ) # type: ignore[attr-defined]
+    )
 
     thread.last_email = email_obj
-    thread.save() # type: ignore[attr-defined]
-
+    thread.save()
 
     # Process labels
     labels = message.get("labelIds", [])
     for gmail_label_id in labels:
         label = gmail_helper.fetch_label(gmail_label_id)
         label_obj, created = Label.objects.get_or_create(
-                gmail_label_id=label["id"],
-                defaults={
-                    "name" :label["name"],
-                    }
-                ) # type: ignore[attr-defined]
-        # add the label to the email object
-        email_obj.labels.add(label_obj) # type: ignore[attr-defined]
+            gmail_label_id=label["id"],
+            defaults={
+                "name": label["name"],
+            }
+        )
+        email_obj.labels.add(label_obj)
 
     # Process "To"
     to = message.get("To", "")
     for receiver in to.split(","):
-        receiver_name, receiver_email = _extract_email_and_name(receiver)
-        # check if the receiver exists in the database and if not we create it
-        receiver_obj, created = Contact.objects.get_or_create(
-            email = receiver_email,
-            defaults = {
-                "name": receiver_name
-                }
-            )
-        # add the receiver to the email object
-        email_obj.to.add(receiver_obj) # type: ignore[attr-defined]
+        if not receiver.strip():
+            continue
+        receiver_email_obj, receiver_contact = _get_or_create_email_and_contact(receiver)
+        email_obj.to_emails.add(receiver_email_obj)
+        email_obj.to.add(receiver_contact)
 
     # Process "Cc"
-    cc = message.get("Cc", False)
+    cc = message.get("Cc", "")
     if cc:
         for receiver in cc.split(","):
-            receiver_name, receiver_email = _extract_email_and_name(receiver)
-            # check if the receiver exists in the database and if not we create it
-            receiver_obj, created = Contact.objects.get_or_create(
-                email = receiver_email,
-                defaults = {
-                    "name": receiver_name
-                    }
-                )
-            # add the receiver to the email object
-            email_obj.cc.add(receiver_obj) # type: ignore[attr-defined]
-
+            if not receiver.strip():
+                continue
+            receiver_email_obj, receiver_contact = _get_or_create_email_and_contact(receiver)
+            email_obj.cc_emails.add(receiver_email_obj)
+            email_obj.cc.add(receiver_contact)
 
 class Command(BaseCommand):
     help = "Fetch emails from Gmail and store them in the database"
