@@ -18,8 +18,8 @@ def _process_email(message, thread):
     print(f"Processing message id: {message['id']} from: {message['From']} subject: {message['Subject']}")
 
 
-    to_str = message.get("To", "")
-    cc_str = message.get("Cc", "")
+    to_str = message.get("To", "").strip()
+    cc_str = message.get("Cc", "").strip()
 
     # Then we create the email object
     message_date = datetime.fromtimestamp(int(message['internalDate']) / 1000)
@@ -27,7 +27,7 @@ def _process_email(message, thread):
         message_date = message_date.replace(tzinfo=timezone('UTC'))
     print(f"Processing message date: %s --> %s" % (message['Date'], message_date.isoformat()))
 
-    sender_str = message.get("From")
+    sender_str = message.get("From", "").strip()
     sender_str_obj, created = EmailString.objects.get_or_create(
         original_string=sender_str,
     )
@@ -51,7 +51,7 @@ def _process_email(message, thread):
         if not receiver.strip():
             continue
         receiver_str_obj, created = EmailString.objects.get_or_create(
-            original_string=receiver,
+            original_string=receiver.strip(),
         )
         email_obj.to_str.add(receiver_str_obj)
 
@@ -59,7 +59,7 @@ def _process_email(message, thread):
         if not receiver.strip():
             continue
         receiver_str_obj, created = EmailString.objects.get_or_create(
-            original_string=receiver,
+            original_string=receiver.strip(),
         )
         email_obj.cc_str.add(receiver_str_obj)
 

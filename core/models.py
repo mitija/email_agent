@@ -26,23 +26,28 @@ def _extract_email_and_name(original_string):
         email = original_string.strip()
 
     if not name:
-        name = original_string.strip()
+        name = email.strip()
 
     if "@" in name:
         name = name.split("@")[0]
-        # remove - and . from name and replace with space and capitalize the first letter
-        name = re.sub(r'-', ' ', name)
-        name = re.sub(r'\.', ' ', name)
-        name = name.strip()
+
+    # We try to normalize the name
+    name = re.sub(r'-', ' ', name)
+    name = re.sub(r'\.', ' ', name)
+    name = re.sub(r'_', ' ', name)
+
+    # We remove " from name
+    name = re.sub(r'"', '', name)
+    name = name.strip()
 
     # remove any non-ascii characters and replace them by their ascii equivalent
     name = unicodedata.normalize('NFKD', name).encode('ascii', 'ignore').decode('ascii')
 
-    # remove double spaces in name and hyphens
-    name = re.sub(r'-', ' ', name)
+    # remove double spaces in name
     name = re.sub(r'\s+', ' ', name)
     # Capitalize each word in name
     name = name.title()
+
     return (name, email)
 
 class Contact(models.Model):
@@ -71,6 +76,9 @@ class EmailString(models.Model):
         self.name = name
         self.email = EmailAddress.objects.get_or_create(email=email)[0]
         super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.original_string
 
 
 class Label(models.Model):
@@ -101,7 +109,7 @@ class Email(models.Model):
         return truncated_body
 
     def __str__(self):
-        return f"{self.subject} - {self.date} - from {self.sender}"
+        return f"{self.subject} - {self.date} - from {self.sender_str}"
 
 class Thread(models.Model):
     gmail_thread_id = models.CharField(max_length=255)
