@@ -35,7 +35,7 @@ def create_thread_summary(modeladmin, request, queryset):
         # We create a ThreadSummary object for each thread
         thread_summary = ThreadSummary.objects.create(
             thread=thread,
-            email=thread.emails.last(),
+            email=thread.email_set.last(),
             summary=summary
         )
         # We log the summary created

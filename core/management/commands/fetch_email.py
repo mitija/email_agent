@@ -20,34 +20,41 @@ def _extract_email_and_name(email):
     name = name.encode('ascii', 'ignore').decode('ascii')
     email = email.encode('ascii', 'ignore').decode('ascii')
     # remove double spaces in name and hyphens
+    name = re.sub(r'-', ' ', name)
     name = re.sub(r'\s+', ' ', name)
-    name = re.sub(r'-', '', name)
     return (name, email)
 
-def _get_or_create_email_and_contact(email_str):
-    """Helper function to get or create both EmailAddress and Contact objects"""
+def _get_or_create_contact(email_str):
+    """Helper function to get or create Contact object"""
     name, email = _extract_email_and_name(email_str)
     
-    # First get or create the EmailAddress
-    email_obj, _ = EmailAddress.objects.get_or_create(
-        email=email
+    contact = Contact.objects.filter(name=name).first()
+
+    if contact:
+        return contact
+
+    # If not, then we search if we have a unique contact which already uses this email
+    contacts = Contact.objects.filter(emails__email=email)
+    if contacts.count() == 1:
+        contact = contacts.first()
+        return contact
+
+    email_obj, created = EmailAddress.objects.get_or_create(
+        email=email,
+        defaults={
+            "is_active": True,
+            "is_generic": False
+        }
     )
-    
-    # Then try to find an existing contact with this email
-    existing_contact = Contact.objects.filter(emails=email_obj).first()
-    
-    if existing_contact:
-        # Update name if it was empty
-        if not existing_contact.name and name:
-            existing_contact.name = name
-            existing_contact.save()
-        contact = existing_contact
-    else:
-        # Create new contact if none exists
-        contact = Contact.objects.create(name=name)
-        contact.emails.add(email_obj)
-    
-    return email_obj, contact
+
+    # If we have multiple contacts with the same email, we create a new contact with the email and the name
+    contact = Contact.objects.create(
+        name=name,
+    )
+    contact.emails.add(email_obj)
+    contact.save()
+
+    return contact
 
 def _process_email(message, thread):
     """ This method will process one email
@@ -61,7 +68,7 @@ def _process_email(message, thread):
 
     # Process sender
     sender_str = message.get("From")
-    sender_email_obj, sender_contact = _get_or_create_email_and_contact(sender_str)
+    sender = _get_or_create_contact(sender_str)
 
     # Then we process the message
     message_date = datetime.fromtimestamp(int(message['internalDate']) / 1000)
@@ -76,8 +83,7 @@ def _process_email(message, thread):
             "date": message_date,
             "subject": message['Subject'],
             "snippet": message['snippet'],
-            "sender_email": sender_email_obj,
-            "sender": sender_contact,
+            "sender": sender,
             "sender_str": sender_str,
             "body": message['Body'],
             "thread": thread,
@@ -104,9 +110,8 @@ def _process_email(message, thread):
     for receiver in to.split(","):
         if not receiver.strip():
             continue
-        receiver_email_obj, receiver_contact = _get_or_create_email_and_contact(receiver)
-        email_obj.to_emails.add(receiver_email_obj)
-        email_obj.to.add(receiver_contact)
+        receiver_contact = _get_or_create_contact(receiver)
+        email_obj.to_contacts.add(receiver_contact)
 
     # Process "Cc"
     cc = message.get("Cc", "")
@@ -114,9 +119,8 @@ def _process_email(message, thread):
         for receiver in cc.split(","):
             if not receiver.strip():
                 continue
-            receiver_email_obj, receiver_contact = _get_or_create_email_and_contact(receiver)
-            email_obj.cc_emails.add(receiver_email_obj)
-            email_obj.cc.add(receiver_contact)
+            receiver_contact = _get_or_create_contact(receiver)
+            email_obj.cc_contacts.add(receiver_contact)
 
 class Command(BaseCommand):
     help = "Fetch emails from Gmail and store them in the database"

@@ -23,8 +23,8 @@ class Contact(models.Model):
 
     def __str__(self):
         if self.name and self.primary_email:
-            return f"{self.name} <{self.primary_email}>"
-        return self.name or self.primary_email
+            return f"{self.name} <{self.primary_email.email}>"
+        return self.name or self.primary_email.email
 
 class Label(models.Model):
     name = models.CharField(max_length=100)
@@ -79,6 +79,7 @@ class Thread(models.Model):
 
     @property
     def participants(self):
+        """Returns a list of unique Contact objects that participated in this thread"""
         participants = set()
         for email in self.email_set.all(): # type: ignore[attr-defined]
             participants.add(email.sender)
@@ -90,7 +91,7 @@ class Thread(models.Model):
 
     @property
     def number_of_emails(self):
-        return self.email_set.count() # type: ignore[attr-defined]
+        return self.email_set.count()
 
     def __str__(self):
         if self.email_set.exists(): # type: ignore[attr-defined]
