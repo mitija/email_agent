@@ -12,13 +12,14 @@ class EmailAddressAdmin(admin.ModelAdmin):
 @admin.register(EmailString)
 class EmailStringAdmin(admin.ModelAdmin):
     list_display = ('original_string', 'name', 'email', 'contact')
-    search_fields = ('original_string', 'name', 'email')
+    search_fields = ('original_string', 'name', 'email__email')
 
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
     list_display = ('name', 'primary_email')
     search_fields = ('name', 'emails__email')
     filter_horizontal = ('emails',)
+    autocomplete_fields = ('emails',)
 
 @admin.register(Email)
 class EmailAdmin(admin.ModelAdmin):

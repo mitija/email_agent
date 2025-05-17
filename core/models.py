@@ -54,23 +54,23 @@ def _extract_email_and_name(original_string):
 def _search_similar_contacts(name, email):
     # first we will search for the same normalized name and email
     print(f"CONTACT: Searching for similar contacts for {name} and {email}")
-    possible_email_strings = EmailString.objects.filter(name=name, email__email=email, contact__isnull=False)
-    if len(possible_email_strings) == 1:
-        contact = possible_email_strings.first().contact
+    possible_contacts = Contact.objects.filter(name=name, emails__email=email)
+    if len(possible_contacts) == 1:
+        contact = possible_contacts.first()
         print(f"CONTACT: Found contact {contact} for {name} and {email}")
         return contact
-    elif len(possible_email_strings) > 1:
-        print(f"CONTACT: MULTIPLE CONTACTS FOUND for {name} and {email}: {possible_email_strings}")
+    elif len(possible_contacts) > 1:
+        print(f"CONTACT: MULTIPLE CONTACTS FOUND for {name} and {email}: {possible_contacts}")
         return None
 
     # if not, we will search for the same normalized name
-    possible_email_strings = EmailString.objects.filter(name=name, contact__isnull=False)
-    if len(possible_email_strings) == 1:
-        contact = possible_email_strings.first().contact
+    possible_contacts = Contact.objects.filter(name=name)
+    if len(possible_contacts) == 1:
+        contact = possible_contacts.first()
         print(f"CONTACT Found contact {contact} for {name}")
         return contact
-    elif len(possible_email_strings) > 1:
-        print(f"MULTIPLE CONTACTS FOUND for {name}: {possible_email_strings}")
+    elif len(possible_contacts) > 1:
+        print(f"CONTACT: MULTIPLE CONTACTS FOUND for {name}: {possible_contacts}")
 
     # If we have not found anyone
     return None
@@ -86,7 +86,7 @@ class Contact(models.Model):
         return self.emails.first()
 
     def __str__(self):
-        return self.name
+        return f"{self.name} - {self.id}"
 
 class EmailString(models.Model):
     original_string = models.CharField(max_length=255, unique=True)
@@ -104,8 +104,14 @@ class EmailString(models.Model):
             contact = _search_similar_contacts(name, email)
             if contact:
                 self.contact = contact
+                # We need to add the email to the contact if it is not already there
+                if self.email not in self.contact.emails.all():
+                    self.contact.emails.add(self.email) 
+                    self.contact.save()
             else:
                 self.contact = Contact.objects.create(name=name)
+                self.contact.emails.add(self.email)
+                self.contact.save()
 
         # We need to check if the contact already exists
         super().save(*args, **kwargs)
