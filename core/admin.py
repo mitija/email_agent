@@ -11,7 +11,7 @@ class EmailAddressAdmin(admin.ModelAdmin):
 #Admin for EmailString
 @admin.register(EmailString)
 class EmailStringAdmin(admin.ModelAdmin):
-    list_display = ('original_string', 'name', 'email')
+    list_display = ('original_string', 'name', 'email', 'contact')
     search_fields = ('original_string', 'name', 'email')
 
 @admin.register(Contact)
