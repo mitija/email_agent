@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Contact, Email, Label, Thread, ThreadSummary, Action, SpecificInstruction, SystemParameter, EmailAddress
+from .models import Contact, Email, Label, Thread, ThreadSummary, SystemParameter, EmailAddress, EmailString
 from .langgraph_helper import langgraph_helper
 
 @admin.register(EmailAddress)
@@ -7,6 +7,12 @@ class EmailAddressAdmin(admin.ModelAdmin):
     list_display = ('email', 'is_generic', 'is_active')
     search_fields = ('email',)
     list_filter = ('is_generic', 'is_active')
+
+#Admin for EmailString
+@admin.register(EmailString)
+class EmailStringAdmin(admin.ModelAdmin):
+    list_display = ('original_string', 'name', 'email')
+    search_fields = ('original_string', 'name', 'email')
 
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
@@ -18,7 +24,7 @@ class ContactAdmin(admin.ModelAdmin):
 class EmailAdmin(admin.ModelAdmin):
     list_display = ('date', 'sender_str', 'subject')
     search_fields = ('subject', 'sender_str', 'sender__name')
-    autocomplete_fields = ('sender', 'to_contacts', 'cc_contacts', 'labels')
+    autocomplete_fields = ('sender_str', 'to_str', 'cc_str', 'labels')
     list_filter = ('date',)
 
 @admin.register(Label)
@@ -56,14 +62,6 @@ class ThreadAdmin(admin.ModelAdmin):
 @admin.register(ThreadSummary)
 class ThreadSummaryAdmin(admin.ModelAdmin):
     list_display = ("thread", "timestamp")
-
-@admin.register(Action)
-class ActionAdmin(admin.ModelAdmin):
-    list_display = ("email", "action", "timestamp")
-
-@admin.register(SpecificInstruction)
-class SpecificInstructionAdmin(admin.ModelAdmin):
-    list_display = ("contact", "label", "instruction")
 
 @admin.register(SystemParameter)
 class SystemParameterAdmin(admin.ModelAdmin):

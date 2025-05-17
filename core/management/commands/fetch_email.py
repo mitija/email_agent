@@ -1,60 +1,11 @@
 # we will add a command to django manage.py to fetch emails from the gmail api
 from django.core.management.base import BaseCommand
-from core.models import SystemParameter, Thread, Email, Label, Contact, EmailAddress
+from core.models import SystemParameter, Thread, Email, Label, Contact, EmailAddress, EmailString
 from core.gmail_helper import gmail_helper
 from datetime import datetime, timedelta
 from pytz import timezone
 import re
-
-def _extract_email_and_name(email):
-    """ This method will extract the email and name from the email string
-    parameters: email - a string with the format "Name <email>"
-    It will return a tuple with the name and email
-    """
-    if "<" in email:
-        name = email.split("<")[0].strip()
-        email = email.split("<")[1].split(">")[0].strip()
-    else:
-        name = email.strip()
-    # remove any non-ascii characters
-    name = name.encode('ascii', 'ignore').decode('ascii')
-    email = email.encode('ascii', 'ignore').decode('ascii')
-    # remove double spaces in name and hyphens
-    name = re.sub(r'-', ' ', name)
-    name = re.sub(r'\s+', ' ', name)
-    return (name, email)
-
-def _get_or_create_contact(email_str):
-    """Helper function to get or create Contact object"""
-    name, email = _extract_email_and_name(email_str)
-    
-    contact = Contact.objects.filter(name=name).first()
-
-    if contact:
-        return contact
-
-    # If not, then we search if we have a unique contact which already uses this email
-    contacts = Contact.objects.filter(emails__email=email)
-    if contacts.count() == 1:
-        contact = contacts.first()
-        return contact
-
-    email_obj, created = EmailAddress.objects.get_or_create(
-        email=email,
-        defaults={
-            "is_active": True,
-            "is_generic": False
-        }
-    )
-
-    # If we have multiple contacts with the same email, we create a new contact with the email and the name
-    contact = Contact.objects.create(
-        name=name,
-    )
-    contact.emails.add(email_obj)
-    contact.save()
-
-    return contact
+import unicodedata
 
 def _process_email(message, thread):
     """ This method will process one email
@@ -66,15 +17,20 @@ def _process_email(message, thread):
     # Log that we process message id and subject
     print(f"Processing message id: {message['id']} from: {message['From']} subject: {message['Subject']}")
 
-    # Process sender
-    sender_str = message.get("From")
-    sender = _get_or_create_contact(sender_str)
 
-    # Then we process the message
+    to_str = message.get("To", "")
+    cc_str = message.get("Cc", "")
+
+    # Then we create the email object
     message_date = datetime.fromtimestamp(int(message['internalDate']) / 1000)
     if message_date.tzinfo is None:
         message_date = message_date.replace(tzinfo=timezone('UTC'))
     print(f"Processing message date: %s --> %s" % (message['Date'], message_date.isoformat()))
+
+    sender_str = message.get("From")
+    sender_str_obj, created = EmailString.objects.get_or_create(
+        original_string=sender_str,
+    )
     
     email_obj, created = Email.objects.get_or_create( 
         gmail_message_id=message['id'],
@@ -83,12 +39,29 @@ def _process_email(message, thread):
             "date": message_date,
             "subject": message['Subject'],
             "snippet": message['snippet'],
-            "sender": sender,
-            "sender_str": sender_str,
             "body": message['Body'],
             "thread": thread,
+            "sender_str": sender_str_obj,
         }
     )
+
+    # Process to and from fields
+
+    for receiver in to_str.split(","):
+        if not receiver.strip():
+            continue
+        receiver_str_obj, created = EmailString.objects.get_or_create(
+            original_string=receiver,
+        )
+        email_obj.to_str.add(receiver_str_obj)
+
+    for receiver in cc_str.split(","):
+        if not receiver.strip():
+            continue
+        receiver_str_obj, created = EmailString.objects.get_or_create(
+            original_string=receiver,
+        )
+        email_obj.cc_str.add(receiver_str_obj)
 
     thread.last_email = email_obj
     thread.save()
@@ -105,22 +78,8 @@ def _process_email(message, thread):
         )
         email_obj.labels.add(label_obj)
 
-    # Process "To"
-    to = message.get("To", "")
-    for receiver in to.split(","):
-        if not receiver.strip():
-            continue
-        receiver_contact = _get_or_create_contact(receiver)
-        email_obj.to_contacts.add(receiver_contact)
+    email_obj.save()
 
-    # Process "Cc"
-    cc = message.get("Cc", "")
-    if cc:
-        for receiver in cc.split(","):
-            if not receiver.strip():
-                continue
-            receiver_contact = _get_or_create_contact(receiver)
-            email_obj.cc_contacts.add(receiver_contact)
 
 class Command(BaseCommand):
     help = "Fetch emails from Gmail and store them in the database"
@@ -135,7 +94,7 @@ class Command(BaseCommand):
         last_sync_obj, created = SystemParameter.objects.get_or_create(
                 key="last_sync_time",
                 defaults= {
-                    "value" : int(datetime.now().timestamp()) - 3600*12, #2 hours
+                    "value" : int(datetime.now().timestamp()) - 3600*24, #2 hours
                     }
                 ) # type: ignore[attr-defined]
         # log the last sync time

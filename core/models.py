@@ -1,16 +1,49 @@
 from django.db import models
 import re
+import unicodedata
 
 # Create your models here.
 class EmailAddress(models.Model):
     email = models.EmailField(unique=True)
     is_active = models.BooleanField(default=True)
     is_generic = models.BooleanField(default=False, help_text="Whether this is a generic email (e.g. no-reply@company.com)")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.email
+
+def _extract_email_and_name(original_string):
+    """ This method will extract the email and name from the email string
+    parameters: email - a string with the format "Name <email>"
+    It will return a tuple with the name and email
+    """
+    name = ""
+    email = ""
+
+    if "<" in original_string:
+        name = original_string.split("<")[0].strip()
+        email = original_string.split("<")[1].split(">")[0].strip()
+    else:
+        email = original_string.strip()
+
+    if not name:
+        name = original_string.strip()
+
+    if "@" in name:
+        name = name.split("@")[0]
+        # remove - and . from name and replace with space and capitalize the first letter
+        name = re.sub(r'-', ' ', name)
+        name = re.sub(r'\.', ' ', name)
+        name = name.strip()
+
+    # remove any non-ascii characters and replace them by their ascii equivalent
+    name = unicodedata.normalize('NFKD', name).encode('ascii', 'ignore').decode('ascii')
+
+    # remove double spaces in name and hyphens
+    name = re.sub(r'-', ' ', name)
+    name = re.sub(r'\s+', ' ', name)
+    # Capitalize each word in name
+    name = name.title()
+    return (name, email)
 
 class Contact(models.Model):
     name = models.CharField(max_length=255)
@@ -26,6 +59,20 @@ class Contact(models.Model):
             return f"{self.name} <{self.primary_email.email}>"
         return self.name or self.primary_email.email
 
+class EmailString(models.Model):
+    original_string = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
+    email = models.ForeignKey(EmailAddress, on_delete=models.CASCADE)
+    contact = models.ForeignKey(Contact, on_delete=models.CASCADE, null=True, blank=True)
+
+    # On save, we update the name and email
+    def save(self, *args, **kwargs):
+        name, email = _extract_email_and_name(self.original_string)
+        self.name = name
+        self.email = EmailAddress.objects.get_or_create(email=email)[0]
+        super().save(*args, **kwargs)
+
+
 class Label(models.Model):
     name = models.CharField(max_length=100)
     gmail_label_id = models.CharField(max_length=100, unique=True)
@@ -38,10 +85,9 @@ class Email(models.Model):
     gmail_message_id = models.CharField(max_length=255, unique=True)
     gmail_thread_id = models.CharField(max_length=255)
     date = models.DateTimeField()
-    sender_str = models.CharField(max_length=255)
-    sender = models.ForeignKey(Contact, on_delete=models.PROTECT, related_name="sent_emails")
-    to_contacts = models.ManyToManyField(Contact, related_name="to_emails")
-    cc_contacts = models.ManyToManyField(Contact, related_name="cc_emails", blank=True)
+    sender_str = models.ForeignKey(EmailString, on_delete=models.PROTECT, related_name="sent_emails")
+    to_str = models.ManyToManyField(EmailString, related_name="to_emails")
+    cc_str = models.ManyToManyField(EmailString, related_name="cc_emails")
     subject = models.CharField(max_length=255)
     body = models.TextField()
     snippet = models.TextField()
@@ -98,7 +144,6 @@ class Thread(models.Model):
             return f"Thread {self.email_set.first().subject} - {self.email_set.first().date}" # type: ignore[attr-defined]
         return f"Thread {self.id}" # type: ignore[attr-defined]
 
-
 class ThreadSummary(models.Model):
     thread = models.ForeignKey(Thread, on_delete=models.CASCADE)
     email = models.ForeignKey(Email, on_delete=models.CASCADE)
@@ -107,37 +152,6 @@ class ThreadSummary(models.Model):
 
     def __str__(self):
         return f"Summary for Thread {self.thread.id} at {self.timestamp}"
-
-class Action(models.Model):
-    ACTION_CHOICES = [
-        ("none", "None"),
-        ("info", "Information"),
-        ("respond", "To Respond"),
-        ("follow", "To Follow"),
-    ]
-
-    thread = models.ForeignKey(Thread, on_delete=models.CASCADE)
-    email = models.OneToOneField(Email, on_delete=models.CASCADE)
-    timestamp = models.DateTimeField(auto_now_add=True)
-    action = models.CharField(max_length=10, choices=ACTION_CHOICES)
-    draft_response = models.TextField(blank=True, null=True)
-    rationale = models.TextField(blank=True, null=True)
-
-    def __str__(self):
-        return f"Action for Email {self.email_id}: {self.get_action_display()}"
-
-class SpecificInstruction(models.Model):
-    contact = models.ForeignKey(Contact, on_delete=models.SET_NULL, null=True, blank=True)
-    label = models.ForeignKey(Label, on_delete=models.SET_NULL, null=True, blank=True)
-    instruction = models.TextField()
-
-    def __str__(self):
-        parts = []
-        if self.contact:
-            parts.append(f"Contact: {self.contact.name}")
-        if self.label:
-            parts.append(f"Tag: {self.label.name}")
-        return " | ".join(parts) or "Global Instruction"
 
 class SystemParameter(models.Model):
     key = models.CharField(max_length=50, unique=True)
