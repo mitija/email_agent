@@ -3,13 +3,14 @@
 This module provides a helper class for LangGraph, which is used to create summaries of email threads.
 and other things
 """
+from django.db.models.query import EmptyQuerySet
 from langchain_ollama import OllamaLLM
 from langchain.prompts import PromptTemplate
 from langgraph.graph import StateGraph, START, END
 import json
-from typing import Any, List
+from typing import Any, List, Set, Dict
 from typing_extensions import TypedDict
-from core.models import ThreadSummary
+from core.models import Contact, ThreadSummary
 
 PROMPT_SUMMARY = """
 This is not an interactive session. You must read this conversation and assess:
@@ -52,6 +53,13 @@ Return your answer strictly in JSON format using the following format:
 {{ "updated_knowledge": "updated knowledge" }}
 """
 
+KNOWLEDGE_TEMPLATE = """
+Contact Internal ID: %s
+Name: %s
+Appears as: %s
+Existig knowedge: %s
+"""
+
 llm = OllamaLLM(model="gemma3:4b-it-qat")
 
 summary_prompt = PromptTemplate(
@@ -77,8 +85,9 @@ def extract_thread_node(state):
     thread = state["thread"]
     messages = []
     for email in thread.email_set.all():
-        messages.append("From: %s <%s>: " % (email.sender.name, email.sender.email))
-        messages.append("To: %s: " % email.to)
+        messages.append("From: %s: " % (email.sender_str.original_string))
+        messages.append("To: %s: " % ", ".join([t.original_string for t in email.to_str.all()]))
+        messages.append("CC: %s: " % ", ".join([t.original_string for t in email.cc_str.all()]))
         messages.append("Date: %s: " % email.date)
         messages.append("Labels: %s: " % " ".join([l.name for l in email.labels.all()]))
         messages.append("Subject: %s: " % email.subject)
@@ -86,13 +95,38 @@ def extract_thread_node(state):
         messages.append("----")
     return {**state, "conversation": '\n'.join(messages)}
 
+class ParticipantSet():
+    contacts : Set
+    email_str_list: Dict
+
+    def __init__(self):
+        self.email_str_list = dict()
+        self.contacts = set()
+
+    def add_email_str(self, email_str):
+        contact = email_str.contact
+        self.contacts.add(contact)
+        email_strs = self.email_str_list.get(contact.id, [])
+        email_strs.append(email_str.original_string)
+        self.email_str_list[contact.id] = email_strs
+
+    def __str__(self):
+        result = ""
+        for p in self.contacts:
+            r = KNOWLEDGE_TEMPLATE % (p.id, p.name, self.email_str_list[p.id], p.knowledge)
+            result += r 
+        return result
+
 def gather_knowledge_node(state):
     print("DEBUG: gather_knowledge_node")
     print(state)
-    knowledge_by_email = {
-      p.email: p.knowledge or "" for p in state["thread"].participants if p.email
-    }
-    return { **state, "knowledge": knowledge_by_email }
+    thread = state["thread"]
+    participant_set = ParticipantSet()
+
+    for p in thread.participants:
+        participant_set.add_email_str(p)
+
+    return { **state, "knowledge": str(participant_set) }
 
 def summarize_thread_node(state):
     print("DEBUG: summarize_thread_node")
@@ -117,13 +151,13 @@ def summarize_thread_node(state):
         summary=summary_data["summary"],
         #action=summary_data["action"],
         #rationale=summary_data["rationale"]
-    ) 
+    )  
     thread_summary.save()
     return { **state, "thread_summary": summary_data }
 
 def update_knowledge_node(state):
     print("DEBUG: update_knowledge_node")
-    print(state)
+    return state["thread_summary"]
     thread_summary = state["thread_summary"]
     participants = state["thread"].participants
     knowledge_by_email = state["knowledge"]
