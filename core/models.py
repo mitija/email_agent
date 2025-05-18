@@ -173,14 +173,14 @@ class Thread(models.Model):
     @property
     def participants(self):
         """Returns a list of unique Contact objects that participated in this thread"""
-        participants = set()
+        participants_str = set()
         for email in self.email_set.all(): # type: ignore[attr-defined]
-            participants.add(email.sender)
-            for receiver in email.to.all():
-                participants.add(receiver)
-            for cc in email.cc.all():
-                participants.add(cc)
-        return list(participants)
+            participants_str.add(email.sender_str)
+            for receiver in email.to_str.all():
+                participants_str.add(receiver)
+            for cc in email.cc_str.all():
+                participants_str.add(cc)
+        return list(participants_str)
 
     @property
     def number_of_emails(self):
