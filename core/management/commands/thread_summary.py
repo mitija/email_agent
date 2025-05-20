@@ -28,7 +28,6 @@ class Command(BaseCommand):
 
         # Now we create a summary for the thread
         summary = langgraph_helper.invoke({"thread": thread})
-        print(f"Thread Summary: {summary}")
 
 
 
