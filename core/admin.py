@@ -13,6 +13,7 @@ class EmailAddressAdmin(admin.ModelAdmin):
 class EmailStringAdmin(admin.ModelAdmin):
     list_display = ('original_string', 'name', 'email', 'contact')
     search_fields = ('original_string', 'name', 'email__email')
+    autocomplete_fields = ('contact',)
 
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):

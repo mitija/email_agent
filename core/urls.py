@@ -1,5 +1,6 @@
 from django.urls import path
 from core.views.contact_review import ContactReviewListView, ContactReviewUpdateView, complete_review, search_contacts, update_contact_details
+from core.views.orphaned_contacts import OrphanedContactsListView, delete_contact, delete_all_orphaned_contacts
 
 urlpatterns = [
     # ... existing urls ...
@@ -8,4 +9,9 @@ urlpatterns = [
     path('contact-review/complete/', complete_review, name='contact_review_complete'),
     path('contact-review/search-contacts/', search_contacts, name='search_contacts'),
     path('contact-review/update-details/<int:contact_id>/', update_contact_details, name='update_contact_details'),
+    
+    # Orphaned contacts
+    path('orphaned-contacts/', OrphanedContactsListView.as_view(), name='orphaned_contacts_list'),
+    path('orphaned-contacts/delete/<int:contact_id>/', delete_contact, name='delete_contact'),
+    path('orphaned-contacts/delete-all/', delete_all_orphaned_contacts, name='delete_all_orphaned_contacts'),
 ] 
