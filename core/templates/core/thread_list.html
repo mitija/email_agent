@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Email Threads</h1>
+    </div>
+    <div class="bg-white shadow-md rounded-lg">
+        <div class="p-6">
+            {% if threads %}
+            <div class="divide-y">
+                {% for thread in threads %}
+                <div class="py-4 flex justify-between items-center thread-row">
+                    <div class="flex flex-col">
+                        <span class="font-semibold text-gray-800">{{ thread.subject }}</span>
+                        <span class="text-xs text-gray-500">{{ thread.date|date:'M d, Y, g:i a' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        {% if not thread.has_summary %}
+                        <button class="summarize-btn px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 transition text-sm" data-thread-id="{{ thread.id }}">
+                            Summarize
+                        </button>
+                        {% endif %}
+                        <button class="toggle-summary px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-100 transition text-sm" data-thread-id="{{ thread.id }}">
+                            &gt;
+                        </button>
+                    </div>
+                </div>
+                <div class="summary-content bg-gray-50 border border-gray-200 rounded p-3 mt-2 mb-4 mx-2" id="summary-{{ thread.id }}" style="display: none;">
+                    {% if thread.summary %}
+                    <div>
+                        <div class="text-sm text-gray-600 mb-1"><span class="font-semibold">Action:</span> {{ thread.action }}</div>
+                        <div class="text-gray-800">{{ thread.summary }}</div>
+                        {% if thread.rationale %}
+                        <div class="text-xs text-gray-500 mt-2"><span class="font-semibold">Rationale:</span> {{ thread.rationale }}</div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <p class="text-gray-400 italic">No summary available</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-600">No threads available.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle summary visibility
+    document.querySelectorAll('.toggle-summary').forEach(button => {
+        button.addEventListener('click', function() {
+            // Find the closest thread-row and its next sibling (the summary)
+            const threadRow = this.closest('.thread-row');
+            const summaryContent = threadRow.nextElementSibling;
+            if (!summaryContent || !summaryContent.classList.contains('summary-content')) return;
+            const isVisible = summaryContent.style.display !== 'none';
+            summaryContent.style.display = isVisible ? 'none' : 'block';
+            this.textContent = isVisible ? '>' : 'v';
+        });
+    });
+
+    // Handle summarize button clicks
+    document.querySelectorAll('.summarize-btn').forEach(button => {
+        button.addEventListener('click', async function() {
+            const threadId = this.dataset.threadId;
+            this.disabled = true;
+            this.textContent = 'Summarizing...';
+
+            try {
+                const response = await fetch(`/threads/${threadId}/summarize/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update the summary content
+                    const summaryContent = document.getElementById(`summary-${threadId}`);
+                    summaryContent.innerHTML = `
+                        <div>
+                            <div class=\"text-sm text-gray-600 mb-1\"><span class=\"font-semibold\">Action:</span> ${data.action}</div>
+                            <div class=\"text-gray-800\">${data.summary}</div>
+                            <div class=\"text-xs text-gray-500 mt-2\"><span class=\"font-semibold\">Rationale:</span> ${data.rationale}</div>
+                        </div>
+                    `;
+                    summaryContent.style.display = 'block';
+                    
+                    // Update button state
+                    this.textContent = 'Summarized';
+                    this.classList.remove('bg-blue-600');
+                    this.classList.add('bg-green-600');
+                } else {
+                    throw new Error(data.error || 'Failed to summarize thread');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                this.textContent = 'Retry';
+                this.disabled = false;
+                alert('Failed to summarize thread. Please try again.');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 

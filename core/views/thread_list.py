@@ -1,0 +1,50 @@
+from django.shortcuts import render
+from django.http import JsonResponse
+from core.models import Thread, ThreadSummary
+from core.llm.nodes import summarize_thread_node
+
+def thread_list(request):
+    threads = Thread.objects.all().order_by('-created_at')
+    thread_data = []
+    
+    for thread in threads:
+        last_email = thread.last_email
+        has_summary = ThreadSummary.objects.filter(thread=thread).exists()
+        latest_summary = ThreadSummary.objects.filter(thread=thread).order_by('-timestamp').first()
+        
+        thread_data.append({
+            'id': thread.id,
+            'subject': thread.subject,
+            'date': thread.created_at,
+            'has_summary': has_summary,
+            'summary': latest_summary.summary if latest_summary else None,
+            'action': latest_summary.action if latest_summary else None,
+            'rationale': latest_summary.rationale if latest_summary else None,
+        })
+    
+    return render(request, 'core/thread_list.html', {'threads': thread_data})
+
+def summarize_thread(request, thread_id):
+    try:
+        thread = Thread.objects.get(id=thread_id)
+        state = {
+            "thread": thread,
+            "conversation": "",
+            "message_headers": "",
+            "knowledge": "",
+            "participant_set": None
+        }
+        
+        # Run the summary node
+        result = summarize_thread_node(state)
+        
+        return JsonResponse({
+            'success': True,
+            'summary': result['summary'],
+            'action': result['action'],
+            'rationale': result['rationale']
+        })
+    except Thread.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Thread not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500) 
