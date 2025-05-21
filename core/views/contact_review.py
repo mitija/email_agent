@@ -3,6 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.utils import timezone
 from django.db.models.functions import Lower
+from django.db.models import Q
 from ..models import EmailString, Contact, SystemParameter
 
 class ContactReviewListView(LoginRequiredMixin, ListView):
@@ -50,18 +51,25 @@ class ContactReviewUpdateView(LoginRequiredMixin, UpdateView):
         if contact_id == 'new':
             # Create new contact
             name = request.POST.get('name')
-            email = request.POST.get('email')
             contact = Contact.objects.create(name=name)
             contact.emails.add(email_string.email)
+            contact.save()
         else:
             contact = Contact.objects.get(id=contact_id)
         
+        # Update the email string
         email_string.contact = contact
         email_string.reviewed = True
         email_string.reviewed_at = timezone.now()
         email_string.save()
         
-        return JsonResponse({'status': 'success'})
+        return JsonResponse({
+            'status': 'success',
+            'contact': {
+                'id': contact.id,
+                'name': contact.name
+            }
+        })
 
 def complete_review(request):
     """Mark the current review session as complete"""
@@ -69,4 +77,53 @@ def complete_review(request):
         key='last_contact_review',
         defaults={'value': timezone.now().isoformat()}
     )
-    return JsonResponse({'status': 'success'}) 
+    return JsonResponse({'status': 'success'})
+
+def search_contacts(request):
+    """AJAX endpoint for searching contacts"""
+    query = request.GET.get('q', '')
+    limit = int(request.GET.get('limit', 10))
+    
+    if not query:
+        return JsonResponse({'results': []})
+    
+    # Case-insensitive search
+    contacts = Contact.objects.filter(
+        name__icontains=query
+    ).order_by(Lower('name'))[:limit]
+    
+    results = [{'id': contact.id, 'name': contact.name} for contact in contacts]
+    
+    return JsonResponse({'results': results})
+
+def update_contact_details(request, contact_id):
+    """Update contact details (name and knowledge)"""
+    if request.method == 'POST':
+        try:
+            contact = Contact.objects.get(id=contact_id)
+            name = request.POST.get('name')
+            knowledge = request.POST.get('knowledge')
+            
+            if name:
+                contact.name = name
+            
+            contact.knowledge = knowledge
+            contact.save()
+            
+            return JsonResponse({
+                'status': 'success',
+                'contact': {
+                    'id': contact.id,
+                    'name': contact.name
+                }
+            })
+        except Contact.DoesNotExist:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Contact not found'
+            }, status=404)
+    
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Invalid request method'
+    }, status=400) 
