@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Contact Review</h1>
+        {% if last_review %}
+        <p class="text-gray-600">Last review: {{ last_review|date:"F j, Y" }}</p>
+        {% endif %}
+    </div>
+
+    <div class="bg-white shadow-md rounded-lg">
+        <div class="p-6">
+            {% if email_strings %}
+                <div class="space-y-4">
+                    <!-- Email strings are sorted alphabetically by name -->
+                    {% for email_string in email_strings %}
+                    <div class="border-b pb-4" data-email-string-id="{{ email_string.id }}">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-semibold">{{ email_string.name }}</h3>
+                                <p class="text-gray-600">{{ email_string.email.email }}</p>
+                            </div>
+                            <div class="w-64">
+                                <div class="relative">
+                                    <input type="text" 
+                                           class="contact-search w-full rounded border p-2 mb-1" 
+                                           placeholder="Search contacts..."
+                                           data-email-string-id="{{ email_string.id }}">
+                                    <select class="contact-select w-full rounded border p-2 hidden" 
+                                            data-email-string-id="{{ email_string.id }}">
+                                        <option value="">Select contact...</option>
+                                        {% if email_string.contact %}
+                                        <option value="{{ email_string.contact.id }}" selected>
+                                            {{ email_string.contact.name }}
+                                        </option>
+                                        {% endif %}
+                                        
+                                        {% for contact in contacts %}
+                                            {% if not email_string.contact or contact.id != email_string.contact.id %}
+                                            <option value="{{ contact.id }}" class="contact-option">
+                                                {{ contact.name }}
+                                            </option>
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        <option value="new">+ Create New Contact</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-6">
+                    <button id="complete-review" 
+                            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        Complete Review
+                    </button>
+                </div>
+            {% else %}
+                <p class="text-gray-600">No new email strings to review.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- New Contact Modal -->
+<div id="new-contact-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium leading-6 text-gray-900">Create New Contact</h3>
+            <form id="new-contact-form" class="mt-4">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
+                        Name
+                    </label>
+                    <input type="text" id="name" name="name" required
+                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeModal()"
+                            class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        Create
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const contactSearches = document.querySelectorAll('.contact-search');
+    const contactSelects = document.querySelectorAll('.contact-select');
+    
+    contactSearches.forEach(search => {
+        const emailStringId = search.dataset.emailStringId;
+        const select = document.querySelector(`.contact-select[data-email-string-id="${emailStringId}"]`);
+        
+        search.addEventListener('focus', function() {
+            select.classList.remove('hidden');
+            this.classList.add('hidden');
+            select.focus();
+        });
+        
+        search.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const options = select.querySelectorAll('.contact-option');
+            
+            options.forEach(option => {
+                const text = option.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    option.style.display = '';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+        });
+    });
+    
+    contactSelects.forEach(select => {
+        select.addEventListener('change', function(e) {
+            const emailStringId = this.dataset.emailStringId;
+            const contactId = this.value;
+            
+            if (contactId === 'new') {
+                showNewContactModal(emailStringId);
+            } else {
+                updateContact(emailStringId, contactId);
+            }
+        });
+        
+        select.addEventListener('blur', function() {
+            const search = document.querySelector(`.contact-search[data-email-string-id="${this.dataset.emailStringId}"]`);
+            this.classList.add('hidden');
+            search.classList.remove('hidden');
+        });
+    });
+    
+    document.getElementById('complete-review').addEventListener('click', function() {
+        completeReview();
+    });
+});
+
+function showNewContactModal(emailStringId) {
+    const modal = document.getElementById('new-contact-modal');
+    modal.classList.remove('hidden');
+    modal.dataset.emailStringId = emailStringId;
+}
+
+function closeModal() {
+    const modal = document.getElementById('new-contact-modal');
+    modal.classList.add('hidden');
+}
+
+function updateContact(emailStringId, contactId) {
+    fetch(`/contact-review/update/${emailStringId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: `contact_id=${contactId}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Optionally refresh the page or update UI
+        }
+    });
+}
+
+function completeReview() {
+    fetch('/contact-review/complete/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            window.location.reload();
+        }
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %} 

@@ -9,6 +9,8 @@ class EmailString(TimestampedModel):
     name = models.CharField(max_length=255)
     email = models.ForeignKey(EmailAddress, on_delete=models.CASCADE)
     contact = models.ForeignKey(Contact, on_delete=models.CASCADE, null=True, blank=True)
+    reviewed = models.BooleanField(default=False)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         name, email = extract_email_and_name(self.original_string)
