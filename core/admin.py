@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import Contact, Email, Label, Thread, ThreadSummary, SystemParameter, EmailAddress, EmailString
-from .langgraph_helper import langgraph_helper
+from core.llm import get_langgraph_helper
 
 @admin.register(EmailAddress)
 class EmailAddressAdmin(admin.ModelAdmin):
@@ -36,6 +36,9 @@ class LabelAdmin(admin.ModelAdmin):
 
 @admin.action(description="Create Thread Summary")
 def create_thread_summary(modeladmin, request, queryset):
+    # Get the langgraph helper on demand
+    langgraph_helper = get_langgraph_helper()
+    
     for thread in queryset:
         # We log the names of the thread included on print
         print(f"Thread ID: {thread.id} - Subject: {thread.subject} - Date: {thread.date}")

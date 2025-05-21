@@ -5,7 +5,7 @@
 #- the email is not already attached to a thread summary
 from django.core.management.base import BaseCommand
 from core.models import Thread, ThreadSummary
-from core.langgraph_helper import langgraph_helper
+from core.llm import get_langgraph_helper
 
 
 class Command(BaseCommand):
@@ -27,6 +27,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"Thread ID: {thread.id} - Subject: {thread.subject} - Date: {thread.date}")) # type: ignore[attr-defined]
 
         # Now we create a summary for the thread
+        langgraph_helper = get_langgraph_helper()
         summary = langgraph_helper.invoke({"thread": thread})
 
 
