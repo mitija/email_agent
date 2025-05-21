@@ -96,7 +96,10 @@ def summarize_thread_node(state):
     thread_summary = ThreadSummary.objects.create(
         thread=thread,
         email=thread.email_set.last(),
-        summary=summary_data["summary"]
+        summary=summary_data["summary"],
+        action=summary_data["action"],
+        rationale=summary_data["rationale"],
+        participants=summary_data["participants"]
     )  
     thread_summary.save()
     

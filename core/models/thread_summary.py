@@ -7,6 +7,13 @@ class ThreadSummary(TimestampedModel):
     thread = models.ForeignKey(Thread, on_delete=models.CASCADE)
     email = models.ForeignKey(Email, on_delete=models.CASCADE)
     summary = models.TextField()
+    action = models.CharField(max_length=20, null=True, blank=True, choices=[
+        ('IGNORE', 'Ignore'),
+        ('NEED_TO_KNOW', 'Need to Know'),
+        ('NEED_TO_RESPOND', 'Need to Respond')
+    ])
+    rationale = models.TextField(null=True, blank=True)
+    participants = models.JSONField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

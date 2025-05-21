@@ -42,12 +42,15 @@ def create_thread_summary(modeladmin, request, queryset):
     for thread in queryset:
         # We log the names of the thread included on print
         print(f"Thread ID: {thread.id} - Subject: {thread.subject} - Date: {thread.date}")
-        summary = langgraph_helper.invoke({"thread":thread})
+        summary_data = langgraph_helper.invoke({"thread":thread})
         # We create a ThreadSummary object for each thread
         thread_summary = ThreadSummary.objects.create(
             thread=thread,
             email=thread.email_set.last(),
-            summary=summary
+            summary=summary_data["summary"],
+            action=summary_data["action"],
+            rationale=summary_data["rationale"],
+            participants=summary_data["participants"]
         )
         # We log the summary created
         print(f"Thread Summary: {thread_summary.summary}")
@@ -66,7 +69,7 @@ class ThreadAdmin(admin.ModelAdmin):
 
 @admin.register(ThreadSummary)
 class ThreadSummaryAdmin(admin.ModelAdmin):
-    list_display = ("thread", "timestamp")
+    list_display = ("thread", "action", "summary", "created_at")
 
 @admin.register(SystemParameter)
 class SystemParameterAdmin(admin.ModelAdmin):

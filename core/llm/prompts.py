@@ -25,6 +25,7 @@ Please return your answer strictly in JSON format using the following schema:
   "participants": [
       {{ 
           "name": "name",
+          "email": "email",
           "id": "Contact internal ID (should be an int)",
           "relevant information": "relevant information about this person gained from the thread" 
       }},
