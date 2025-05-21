@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-This module contains node functions used by the LangGraph email processing system.
+This module contains LangGraph node functions for the email processing system.
+Each function represents a step in the LangGraph processing pipeline.
 """
 import json
 from langchain.prompts import PromptTemplate

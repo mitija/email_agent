@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-This module provides a helper class for LangGraph, which is used to create summaries of email threads.
+This module provides the main LangGraph helper class for email processing.
+It defines the graph structure and provides access to the compiled graph.
 """
 from langgraph.graph import StateGraph, START, END
 from core.llm.types import EmailThreadState

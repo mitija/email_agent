@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Orphaned Contacts</h1>
+        <p class="text-gray-600">Contacts not associated with any email stream</p>
+    </div>
+
+    <div class="bg-white shadow-md rounded-lg">
+        <div class="p-6">
+            {% if contacts %}
+                <div class="mb-4 flex justify-between items-center">
+                    <p class="text-gray-700">These contacts are not associated with any email stream and can be safely deleted if no longer needed.</p>
+                    <button id="delete-all-btn" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 ml-4">
+                        Delete All
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Name
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Email(s)
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Created
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for contact in contacts %}
+                            <tr class="contact-row" data-contact-id="{{ contact.id }}">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {{ contact.name }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <div class="space-y-1">
+                                        {% for email in contact.emails.all %}
+                                        <div>{{ email.email }}</div>
+                                        {% empty %}
+                                        <div class="text-gray-400 italic">No emails</div>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ contact.created_at|date:"d-M-y H:i:s" }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button class="delete-contact text-red-600 hover:text-red-900" 
+                                            data-contact-id="{{ contact.id }}" 
+                                            data-contact-name="{{ contact.name }}">
+                                        Delete
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-8">
+                    <p class="text-gray-600">There are no orphaned contacts in the system.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmation-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-20">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <h3 class="text-lg font-medium leading-6 text-gray-900">Confirm Deletion</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500" id="delete-single-message">
+                    Are you sure you want to delete <span id="contact-to-delete" class="font-semibold"></span>?
+                    This action cannot be undone.
+                </p>
+                <p class="text-sm text-gray-500 hidden" id="delete-all-message">
+                    Are you sure you want to delete <span class="font-semibold">ALL orphaned contacts</span>?
+                    This action cannot be undone.
+                </p>
+            </div>
+            <div class="flex justify-center mt-4 space-x-4">
+                <button id="cancel-delete" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
+                    Cancel
+                </button>
+                <button id="confirm-delete" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up delete contact buttons
+    document.querySelectorAll('.delete-contact').forEach(deleteBtn => {
+        deleteBtn.addEventListener('click', function() {
+            const contactId = this.dataset.contactId;
+            const contactName = this.dataset.contactName;
+            
+            // Show confirmation modal for single delete
+            const modal = document.getElementById('confirmation-modal');
+            const contactToDelete = document.getElementById('contact-to-delete');
+            
+            // Show single delete message, hide delete all message
+            document.getElementById('delete-single-message').classList.remove('hidden');
+            document.getElementById('delete-all-message').classList.add('hidden');
+            
+            contactToDelete.textContent = contactName;
+            modal.classList.remove('hidden');
+            
+            // Store the contact ID for deletion and set action type
+            document.getElementById('confirm-delete').dataset.contactId = contactId;
+            document.getElementById('confirm-delete').dataset.action = 'single';
+        });
+    });
+    
+    // Set up delete all button
+    document.getElementById('delete-all-btn')?.addEventListener('click', function() {
+        // Show confirmation modal for delete all
+        const modal = document.getElementById('confirmation-modal');
+        
+        // Hide single delete message, show delete all message
+        document.getElementById('delete-single-message').classList.add('hidden');
+        document.getElementById('delete-all-message').classList.remove('hidden');
+        
+        modal.classList.remove('hidden');
+        
+        // Set action type to 'all'
+        document.getElementById('confirm-delete').dataset.action = 'all';
+    });
+    
+    // Set up cancel button in confirmation modal
+    document.getElementById('cancel-delete').addEventListener('click', function() {
+        document.getElementById('confirmation-modal').classList.add('hidden');
+    });
+    
+    // Set up confirm delete button
+    document.getElementById('confirm-delete').addEventListener('click', function() {
+        const action = this.dataset.action;
+        
+        if (action === 'single') {
+            // Handle single contact deletion
+            const contactId = this.dataset.contactId;
+            deleteSingleContact(contactId);
+        } else if (action === 'all') {
+            // Handle delete all
+            deleteAllContacts();
+        }
+    });
+});
+
+function deleteSingleContact(contactId) {
+    // Send deletion request to server
+    fetch(`/orphaned-contacts/delete/${contactId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Remove the row from the table
+            const row = document.querySelector(`.contact-row[data-contact-id="${contactId}"]`);
+            row.remove();
+            
+            // Hide the modal
+            document.getElementById('confirmation-modal').classList.add('hidden');
+            
+            // Check if there are any contacts left
+            updateTableIfEmpty();
+        } else {
+            alert(`Error: ${data.message}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while trying to delete the contact');
+    });
+}
+
+function deleteAllContacts() {
+    // Send request to delete all orphaned contacts
+    fetch('/orphaned-contacts/delete-all/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Hide the modal
+            document.getElementById('confirmation-modal').classList.add('hidden');
+            
+            // Replace the content with "no contacts" message
+            const container = document.querySelector('.bg-white.shadow-md .p-6');
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <p class="text-gray-600">There are no orphaned contacts in the system.</p>
+                </div>
+            `;
+        } else {
+            alert(`Error: ${data.message}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while trying to delete all contacts');
+    });
+}
+
+function updateTableIfEmpty() {
+    const remainingRows = document.querySelectorAll('.contact-row');
+    if (remainingRows.length === 0) {
+        // Replace the table with "no contacts" message
+        const container = document.querySelector('.bg-white.shadow-md .p-6');
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <p class="text-gray-600">There are no orphaned contacts in the system.</p>
+            </div>
+        `;
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %} 

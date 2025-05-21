@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-This module contains prompts and templates used by the LangGraph email processing system.
+This module contains prompts and templates for the LangGraph email processing system.
+These prompts are used by the LLM to generate summaries and extract knowledge.
 """
 
 # Define prompts as constants

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-This module contains utility functions used by the LangGraph email processing system.
+This module contains utility functions for the LangGraph email processing system.
+It provides LLM initialization and JSON handling utilities.
 """
 from langchain_ollama import OllamaLLM
 from langchain.prompts import PromptTemplate

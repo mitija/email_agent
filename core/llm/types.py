@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-This module contains type definitions and data classes used by the LangGraph email processing system.
+This module contains type definitions and data classes for the LangGraph email processing system.
+It defines the state schema and helper classes needed for the LangGraph pipeline.
 """
 from typing import Any, List, Set, Dict
 from typing_extensions import TypedDict
