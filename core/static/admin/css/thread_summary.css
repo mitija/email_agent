@@ -1,0 +1,10 @@
+.monospace pre {
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #f8f9fa;
+    padding: 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+} 
