@@ -106,8 +106,10 @@
         </div>
     </div>
 </div>
+{% endblock content %}
 
 {% block extra_js %}
+{% csrf_token %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const labelSearch = document.getElementById('labelSearch');
@@ -238,17 +240,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Toggle summary visibility
-    const toggleButtons = document.querySelectorAll('.toggle-summary');
-    toggleButtons.forEach(button => {
-        // Remove any existing click listeners
-        button.replaceWith(button.cloneNode(true));
-    });
-    
-    // Re-query for the buttons after cloning
+    console.log('Setting up toggle summary buttons...');
     document.querySelectorAll('.toggle-summary').forEach(button => {
+        console.log('Adding click handler to button:', button.dataset.threadId);
         button.addEventListener('click', function(e) {
+            console.log('Toggle button clicked:', this.dataset.threadId, 'Event phase:', e.eventPhase);
+            console.log('Event target:', e.target);
+            console.log('Current target:', e.currentTarget);
+            console.log('Event path:', e.composedPath().map(el => el.className || el.tagName));
+            
             e.preventDefault();
             e.stopPropagation();
+            e.stopImmediatePropagation();
             
             const threadId = this.dataset.threadId;
             const summaryContent = document.getElementById(`summary-${threadId}`);
@@ -259,9 +262,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const isVisible = summaryContent.style.display !== 'none';
+            console.log('Current visibility:', isVisible);
             summaryContent.style.display = isVisible ? 'none' : 'block';
             this.textContent = isVisible ? '>' : 'v';
-        });
+            console.log('New visibility:', !isVisible);
+        }, true);  // Use capture phase to handle the event first
     });
 
     // Handle summarize button clicks
@@ -308,5 +313,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-{% endblock extra_js %}
-{% endblock content %} 
+{% endblock extra_js %} 
