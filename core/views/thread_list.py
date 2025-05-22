@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 from core.models import Thread, ThreadSummary, Label
-from core.llm.nodes import summarize_thread_node
+from core.llm.helper import build_graph
 from django.core.paginator import Paginator
 
 def get_labels(request):
@@ -40,26 +40,26 @@ def thread_list(request):
     })
 
 def summarize_thread(request, thread_id):
-    try:
-        thread = Thread.objects.get(id=thread_id)
-        state = {
-            "thread": thread,
-            "conversation": "",
-            "message_headers": "",
-            "knowledge": "",
-            "participant_set": None
-        }
-        
-        # Run the summary node
-        result = summarize_thread_node(state)
-        
-        return JsonResponse({
-            'success': True,
-            'summary': result['summary'],
-            'action': result['action'],
-            'rationale': result['rationale']
-        })
-    except Thread.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Thread not found'}, status=404)
-    except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)}, status=500) 
+    thread = Thread.objects.get(id=thread_id)
+    
+    # Get the compiled graph
+    graph = build_graph()
+    
+    # Run the graph with initial state
+    result = graph.invoke({
+        "thread": thread,
+        "conversation": "",
+        "message_headers": "",
+        "knowledge": "",
+        "participant_set": None
+    })
+    
+    # The summary data is nested under thread_summary
+    summary_data = result['thread_summary']
+    
+    return JsonResponse({
+        'success': True,
+        'summary': summary_data['summary'],
+        'action': summary_data['action'],
+        'rationale': summary_data['rationale']
+    }) 
