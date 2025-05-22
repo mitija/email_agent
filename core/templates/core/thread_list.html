@@ -22,9 +22,11 @@
                             Summarize
                         </button>
                         {% endif %}
+                        {% if thread.summary %}
                         <button class="toggle-summary px-2 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-100 transition text-sm" data-thread-id="{{ thread.id }}">
                             &gt;
                         </button>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="summary-content bg-gray-50 border border-gray-200 rounded p-3 mt-2 mb-4 mx-2" id="summary-{{ thread.id }}" style="display: none;">

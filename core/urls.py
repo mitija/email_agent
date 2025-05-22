@@ -1,6 +1,7 @@
 from django.urls import path
 from core.views.contact_review import ContactReviewListView, ContactReviewUpdateView, complete_review, search_contacts, update_contact_details
 from core.views.orphaned_contacts import OrphanedContactsListView, delete_contact, delete_all_orphaned_contacts
+from core.views.thread_list import thread_list, summarize_thread
 
 urlpatterns = [
     # ... existing urls ...
@@ -14,4 +15,8 @@ urlpatterns = [
     path('orphaned-contacts/', OrphanedContactsListView.as_view(), name='orphaned_contacts_list'),
     path('orphaned-contacts/delete/<int:contact_id>/', delete_contact, name='delete_contact'),
     path('orphaned-contacts/delete-all/', delete_all_orphaned_contacts, name='delete_all_orphaned_contacts'),
+    
+    # Thread list
+    path('threads/', thread_list, name='thread_list'),
+    path('threads/<int:thread_id>/summarize/', summarize_thread, name='summarize_thread'),
 ] 
