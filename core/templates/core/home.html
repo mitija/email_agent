@@ -3,26 +3,85 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <div class="text-center">
+    <div class="text-center mb-8">
         <h1 class="text-4xl font-bold text-gray-900 mb-4">Welcome to Email Assistant</h1>
-        <p class="text-xl text-gray-600 mb-8">Your AI-powered email management solution</p>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <a href="/threads/" class="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition">
-                <h2 class="text-2xl font-semibold text-blue-600 mb-2">Email Threads</h2>
-                <p class="text-gray-600">View and manage your email threads with AI-powered summaries</p>
-            </a>
-            
-            <a href="/contact-review/" class="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition">
-                <h2 class="text-2xl font-semibold text-blue-600 mb-2">Contact Review</h2>
-                <p class="text-gray-600">Review and update contact information</p>
-            </a>
-            
-            <a href="/orphaned-contacts/" class="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition">
-                <h2 class="text-2xl font-semibold text-blue-600 mb-2">Orphaned Contacts</h2>
-                <p class="text-gray-600">Manage contacts without associated emails</p>
-            </a>
+        <p class="text-xl text-gray-600">Your AI-powered email management solution</p>
+    </div>
+
+    <!-- Statistics Section -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Email Statistics</h3>
+            <div class="space-y-2">
+                <p class="flex justify-between">
+                    <span class="text-gray-600">Total Threads:</span>
+                    <span class="font-semibold">{{ total_threads }}</span>
+                </p>
+                <p class="flex justify-between">
+                    <span class="text-gray-600">Total Emails:</span>
+                    <span class="font-semibold">{{ total_emails }}</span>
+                </p>
+                <p class="flex justify-between">
+                    <span class="text-gray-600">Summarized:</span>
+                    <span class="font-semibold text-green-600">{{ summarized_threads }}</span>
+                </p>
+                <p class="flex justify-between">
+                    <span class="text-gray-600">Pending Summary:</span>
+                    <span class="font-semibold text-orange-600">{{ pending_summaries }}</span>
+                </p>
+            </div>
         </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Contact Statistics</h3>
+            <div class="space-y-2">
+                <p class="flex justify-between">
+                    <span class="text-gray-600">Total Contacts:</span>
+                    <span class="font-semibold">{{ total_contacts }}</span>
+                </p>
+                <p class="flex justify-between">
+                    <span class="text-gray-600">Email Addresses to Review:</span>
+                    <span class="font-semibold text-orange-600">{{ unreviewed_email_strings }}</span>
+                </p>
+                <p class="flex justify-between">
+                    <span class="text-gray-600">Orphaned Contacts:</span>
+                    <span class="font-semibold text-red-600">{{ orphaned_contacts }}</span>
+                </p>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Quick Actions</h3>
+            <div class="space-y-3">
+                <a href="/threads/" class="block w-full px-4 py-2 bg-blue-600 text-white text-center rounded hover:bg-blue-700 transition">
+                    View Email Threads
+                </a>
+                <a href="/contact-review/" class="block w-full px-4 py-2 bg-green-600 text-white text-center rounded hover:bg-green-700 transition">
+                    Review Email Addresses
+                </a>
+                <a href="/orphaned-contacts/" class="block w-full px-4 py-2 bg-red-600 text-white text-center rounded hover:bg-red-700 transition">
+                    Clean Orphaned Contacts
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <a href="/threads/" class="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition">
+            <h2 class="text-2xl font-semibold text-blue-600 mb-2">Email Threads</h2>
+            <p class="text-gray-600">View and manage your email threads with AI-powered summaries</p>
+        </a>
+        
+        <a href="/contact-review/" class="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition">
+            <h2 class="text-2xl font-semibold text-blue-600 mb-2">Contact Review</h2>
+            <p class="text-gray-600">Review and update contact information</p>
+        </a>
+        
+        <a href="/orphaned-contacts/" class="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition">
+            <h2 class="text-2xl font-semibold text-blue-600 mb-2">Orphaned Contacts</h2>
+            <p class="text-gray-600">Manage contacts without associated emails</p>
+        </a>
     </div>
 </div>
 {% endblock %} 

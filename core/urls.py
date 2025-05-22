@@ -2,11 +2,11 @@ from django.urls import path
 from core.views.contact_review import ContactReviewListView, ContactReviewUpdateView, complete_review, search_contacts, update_contact_details
 from core.views.orphaned_contacts import OrphanedContactsListView, delete_contact, delete_all_orphaned_contacts
 from core.views.thread_list import thread_list, summarize_thread, get_labels
-from django.views.generic import TemplateView
+from core.views.home import HomeView
 
 urlpatterns = [
     # Home page
-    path('', TemplateView.as_view(template_name='core/home.html'), name='home'),
+    path('', HomeView.as_view(), name='home'),
     
     # Contact review
     path('contact-review/', ContactReviewListView.as_view(), name='contact_review_list'),

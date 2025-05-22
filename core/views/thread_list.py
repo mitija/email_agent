@@ -27,7 +27,8 @@ def thread_list(request):
     page_obj = paginator.get_page(page_number)
     
     thread_data = []
-    summarized_count = 0
+    # Count all summarized threads, not just those on current page
+    summarized_count = ThreadSummary.objects.values('thread').distinct().count()
     
     for thread in page_obj:
         first_email = thread.email_set.first()

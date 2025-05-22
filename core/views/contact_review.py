@@ -73,6 +73,24 @@ class ContactReviewUpdateView(LoginRequiredMixin, UpdateView):
 
 def complete_review(request):
     """Mark the current review session as complete"""
+    # Get the last review time from system parameters
+    last_review_time = SystemParameter.objects.filter(key='last_contact_review').first()
+    
+    # Get all email strings that were shown in this session
+    if last_review_time:
+        email_strings = EmailString.objects.filter(
+            created_at__gt=last_review_time.value
+        )
+    else:
+        email_strings = EmailString.objects.all()
+    
+    # Mark all these email strings as reviewed
+    email_strings.update(
+        reviewed=True,
+        reviewed_at=timezone.now()
+    )
+    
+    # Update the last review time
     SystemParameter.objects.update_or_create(
         key='last_contact_review',
         defaults={'value': timezone.now().isoformat()}
