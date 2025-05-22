@@ -67,6 +67,39 @@
                 </div>
                 {% endfor %}
             </div>
+
+            <!-- Pagination -->
+            {% if paginator.num_pages > 1 %}
+            <div class="mt-6 flex justify-center">
+                <nav class="inline-flex rounded-md shadow">
+                    {% if page_obj.has_previous %}
+                    <a href="?page=1{% if request.GET.labels %}&labels={{ request.GET.labels }}{% endif %}" 
+                       class="px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        &laquo; First
+                    </a>
+                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.labels %}&labels={{ request.GET.labels }}{% endif %}" 
+                       class="px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Previous
+                    </a>
+                    {% endif %}
+
+                    <span class="px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                        Page {{ page_obj.number }} of {{ paginator.num_pages }}
+                    </span>
+
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.labels %}&labels={{ request.GET.labels }}{% endif %}" 
+                       class="px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Next
+                    </a>
+                    <a href="?page={{ paginator.num_pages }}{% if request.GET.labels %}&labels={{ request.GET.labels }}{% endif %}" 
+                       class="px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Last &raquo;
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+            {% endif %}
             {% else %}
             <p class="text-gray-600">No threads available.</p>
             {% endif %}

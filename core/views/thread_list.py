@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from core.models import Thread, ThreadSummary, Label
 from core.llm.nodes import summarize_thread_node
+from django.core.paginator import Paginator
 
 def get_labels(request):
     query = request.GET.get('query', '').lower()
@@ -10,9 +11,13 @@ def get_labels(request):
 
 def thread_list(request):
     threads = Thread.objects.all().order_by('-created_at')
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(threads, 10)  # Show 10 threads per page
+    page_obj = paginator.get_page(page_number)
+    
     thread_data = []
     
-    for thread in threads:
+    for thread in page_obj:
         first_email = thread.email_set.first()
         has_summary = ThreadSummary.objects.filter(thread=thread).exists()
         latest_summary = ThreadSummary.objects.filter(thread=thread).order_by('-timestamp').first()
@@ -28,7 +33,11 @@ def thread_list(request):
             'labels': [label.name for label in first_email.labels.all()] if first_email else [],
         })
     
-    return render(request, 'core/thread_list.html', {'threads': thread_data})
+    return render(request, 'core/thread_list.html', {
+        'threads': thread_data,
+        'page_obj': page_obj,
+        'paginator': paginator
+    })
 
 def summarize_thread(request, thread_id):
     try:
