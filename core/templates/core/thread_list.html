@@ -238,16 +238,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Toggle summary visibility
+    const toggleButtons = document.querySelectorAll('.toggle-summary');
+    toggleButtons.forEach(button => {
+        // Remove any existing click listeners
+        button.replaceWith(button.cloneNode(true));
+    });
+    
+    // Re-query for the buttons after cloning
     document.querySelectorAll('.toggle-summary').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('Toggle button clicked');
+            e.stopPropagation();
             
             const threadId = this.dataset.threadId;
-            console.log('Thread ID:', threadId);
-            
             const summaryContent = document.getElementById(`summary-${threadId}`);
-            console.log('Summary content element:', summaryContent);
             
             if (!summaryContent) {
                 console.error('Summary content not found for thread:', threadId);
@@ -255,12 +259,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const isVisible = summaryContent.style.display !== 'none';
-            console.log('Current visibility:', isVisible);
-            
             summaryContent.style.display = isVisible ? 'none' : 'block';
             this.textContent = isVisible ? '>' : 'v';
-            
-            console.log('New visibility:', !isVisible);
         });
     });
 
