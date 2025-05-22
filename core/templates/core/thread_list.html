@@ -6,6 +6,22 @@
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Email Threads</h1>
     </div>
+    
+    <!-- Label Search Field -->
+    <div class="mb-6">
+        <div class="relative">
+            <input type="text" 
+                   id="labelSearch" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   placeholder="Search labels..."
+                   autocomplete="off">
+            <div id="labelSuggestions" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg hidden">
+            </div>
+        </div>
+        <div id="selectedLabels" class="flex flex-wrap gap-2 mt-2">
+        </div>
+    </div>
+
     <div class="bg-white shadow-md rounded-lg">
         <div class="p-6">
             {% if threads %}
@@ -15,6 +31,13 @@
                     <div class="flex flex-col">
                         <span class="font-semibold text-gray-800">{{ thread.subject }}</span>
                         <span class="text-xs text-gray-500">{{ thread.date|date:'M d, Y, g:i a' }}</span>
+                        {% if thread.labels %}
+                        <div class="flex flex-wrap gap-1 mt-1">
+                            {% for label in thread.labels %}
+                            <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700">{{ label }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     </div>
                     <div class="flex items-center gap-2">
                         {% if not thread.has_summary %}
@@ -54,16 +77,157 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const labelSearch = document.getElementById('labelSearch');
+    const labelSuggestions = document.getElementById('labelSuggestions');
+    const selectedLabels = document.getElementById('selectedLabels');
+    let selectedLabelsSet = new Set();
+    let debounceTimer;
+
+    // Function to fetch label suggestions
+    async function fetchLabelSuggestions(query) {
+        try {
+            const response = await fetch(`/threads/labels/?query=${encodeURIComponent(query)}`);
+            const data = await response.json();
+            return data.labels;
+        } catch (error) {
+            console.error('Error fetching labels:', error);
+            return [];
+        }
+    }
+
+    // Function to update suggestions display
+    function updateSuggestions(suggestions) {
+        labelSuggestions.innerHTML = '';
+        if (suggestions.length > 0) {
+            labelSuggestions.classList.remove('hidden');
+            suggestions.forEach(label => {
+                if (!selectedLabelsSet.has(label)) {
+                    const div = document.createElement('div');
+                    div.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
+                    div.textContent = label;
+                    div.addEventListener('click', () => addLabel(label));
+                    labelSuggestions.appendChild(div);
+                }
+            });
+        } else {
+            labelSuggestions.classList.add('hidden');
+        }
+    }
+
+    // Function to add a label
+    function addLabel(label) {
+        if (!selectedLabelsSet.has(label)) {
+            selectedLabelsSet.add(label);
+            const labelElement = document.createElement('span');
+            labelElement.className = 'px-2 py-1 text-sm rounded-full bg-blue-100 text-blue-700 flex items-center gap-1';
+            
+            const labelText = document.createElement('span');
+            labelText.textContent = label;
+            
+            const removeButton = document.createElement('button');
+            removeButton.className = 'hover:text-blue-900 ml-1';
+            removeButton.textContent = '×';
+            removeButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeLabel(label);
+            });
+            
+            labelElement.appendChild(labelText);
+            labelElement.appendChild(removeButton);
+            selectedLabels.appendChild(labelElement);
+            
+            labelSearch.value = '';
+            labelSuggestions.classList.add('hidden');
+            filterThreads();
+        }
+    }
+
+    // Function to remove a label
+    function removeLabel(label) {
+        selectedLabelsSet.delete(label);
+        const labelElements = selectedLabels.getElementsByTagName('span');
+        for (let element of labelElements) {
+            if (element.textContent.trim() === label) {
+                element.parentElement.remove();
+                break;
+            }
+        }
+        filterThreads();
+    }
+
+    // Function to filter threads based on selected labels
+    function filterThreads() {
+        const threadRows = document.querySelectorAll('.thread-row');
+        threadRows.forEach(row => {
+            const threadLabels = Array.from(row.querySelectorAll('.text-xs.rounded-full'))
+                .map(label => label.textContent.trim());
+            
+            const shouldShow = selectedLabelsSet.size === 0 || 
+                Array.from(selectedLabelsSet).every(label => threadLabels.includes(label));
+            
+            row.style.display = shouldShow ? 'flex' : 'none';
+            const summaryContent = row.nextElementSibling;
+            if (summaryContent && summaryContent.classList.contains('summary-content')) {
+                if (shouldShow) {
+                    // Only show if it was previously open (v button), otherwise keep hidden
+                    if (row.querySelector('.toggle-summary') && row.querySelector('.toggle-summary').textContent.trim() === 'v') {
+                        summaryContent.style.display = 'block';
+                    } else {
+                        summaryContent.style.display = 'none';
+                    }
+                } else {
+                    summaryContent.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    // Event listener for input changes
+    labelSearch.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        const query = this.value.trim();
+        
+        if (query.length > 0) {
+            debounceTimer = setTimeout(async () => {
+                const suggestions = await fetchLabelSuggestions(query);
+                updateSuggestions(suggestions);
+            }, 300);
+        } else {
+            labelSuggestions.classList.add('hidden');
+        }
+    });
+
+    // Close suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!labelSearch.contains(e.target) && !labelSuggestions.contains(e.target)) {
+            labelSuggestions.classList.add('hidden');
+        }
+    });
+
     // Toggle summary visibility
     document.querySelectorAll('.toggle-summary').forEach(button => {
-        button.addEventListener('click', function() {
-            // Find the closest thread-row and its next sibling (the summary)
-            const threadRow = this.closest('.thread-row');
-            const summaryContent = threadRow.nextElementSibling;
-            if (!summaryContent || !summaryContent.classList.contains('summary-content')) return;
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Toggle button clicked');
+            
+            const threadId = this.dataset.threadId;
+            console.log('Thread ID:', threadId);
+            
+            const summaryContent = document.getElementById(`summary-${threadId}`);
+            console.log('Summary content element:', summaryContent);
+            
+            if (!summaryContent) {
+                console.error('Summary content not found for thread:', threadId);
+                return;
+            }
+            
             const isVisible = summaryContent.style.display !== 'none';
+            console.log('Current visibility:', isVisible);
+            
             summaryContent.style.display = isVisible ? 'none' : 'block';
             this.textContent = isVisible ? '>' : 'v';
+            
+            console.log('New visibility:', !isVisible);
         });
     });
 
@@ -85,18 +249,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Update the summary content
                     const summaryContent = document.getElementById(`summary-${threadId}`);
                     summaryContent.innerHTML = `
                         <div>
-                            <div class=\"text-sm text-gray-600 mb-1\"><span class=\"font-semibold\">Action:</span> ${data.action}</div>
-                            <div class=\"text-gray-800\">${data.summary}</div>
-                            <div class=\"text-xs text-gray-500 mt-2\"><span class=\"font-semibold\">Rationale:</span> ${data.rationale}</div>
+                            <div class="text-sm text-gray-600 mb-1"><span class="font-semibold">Action:</span> ${data.action}</div>
+                            <div class="text-gray-800">${data.summary}</div>
+                            <div class="text-xs text-gray-500 mt-2"><span class="font-semibold">Rationale:</span> ${data.rationale}</div>
                         </div>
                     `;
                     summaryContent.style.display = 'block';
                     
-                    // Update button state
                     this.textContent = 'Summarized';
                     this.classList.remove('bg-blue-600');
                     this.classList.add('bg-green-600');
@@ -113,5 +275,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-{% endblock %}
-{% endblock %} 
+{% endblock extra_js %}
+{% endblock content %} 
