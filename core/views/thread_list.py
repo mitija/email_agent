@@ -3,23 +3,37 @@ from django.http import JsonResponse
 from core.models import Thread, ThreadSummary, Label
 from core.llm.helper import build_graph
 from django.core.paginator import Paginator
+from django.contrib.auth.decorators import login_required
 
+@login_required
 def get_labels(request):
     query = request.GET.get('query', '').lower()
     labels = Label.objects.filter(name__icontains=query).values_list('name', flat=True)
     return JsonResponse({'labels': list(labels)})
 
+@login_required
 def thread_list(request):
-    threads = Thread.objects.all().order_by('-created_at')
+    # Get sort parameter with default to newest first
+    sort_by = request.GET.get('sort', '-created_at')
+    
+    # Validate sort parameter to prevent SQL injection
+    valid_sort_fields = ['created_at', '-created_at', 'subject', '-subject']
+    if sort_by not in valid_sort_fields:
+        sort_by = '-created_at'
+    
+    threads = Thread.objects.all().order_by(sort_by)
     page_number = request.GET.get('page', 1)
     paginator = Paginator(threads, 10)  # Show 10 threads per page
     page_obj = paginator.get_page(page_number)
     
     thread_data = []
+    summarized_count = 0
     
     for thread in page_obj:
         first_email = thread.email_set.first()
         has_summary = ThreadSummary.objects.filter(thread=thread).exists()
+        if has_summary:
+            summarized_count += 1
         latest_summary = ThreadSummary.objects.filter(thread=thread).order_by('-timestamp').first()
         
         thread_data.append({
@@ -36,9 +50,14 @@ def thread_list(request):
     return render(request, 'core/thread_list.html', {
         'threads': thread_data,
         'page_obj': page_obj,
-        'paginator': paginator
+        'paginator': paginator,
+        'current_sort': sort_by,
+        'total_threads': paginator.count,
+        'summarized_count': summarized_count,
+        'pending_count': paginator.count - summarized_count
     })
 
+@login_required
 def summarize_thread(request, thread_id):
     thread = Thread.objects.get(id=thread_id)
     

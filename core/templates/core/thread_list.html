@@ -1,14 +1,47 @@
 {% extends "base.html" %}
 {% load static %}
+{% load core_extras %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
+    <!-- Quick Stats Section -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white p-4 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold text-gray-700">Total Threads</h3>
+            <p class="text-2xl font-bold text-blue-600">{{ total_threads }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold text-gray-700">Summarized</h3>
+            <p class="text-2xl font-bold text-green-600">{{ summarized_count }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-md">
+            <h3 class="text-lg font-semibold text-gray-700">Pending Summary</h3>
+            <p class="text-2xl font-bold text-orange-600">{{ pending_count }}</p>
+        </div>
+    </div>
+
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Email Threads</h1>
+        <div class="flex gap-2">
+            <select id="sortSelect" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="-created_at">Newest First</option>
+                <option value="created_at">Oldest First</option>
+                <option value="subject">Subject A-Z</option>
+                <option value="-subject">Subject Z-A</option>
+            </select>
+        </div>
     </div>
-    
-    <!-- Label Search Field -->
-    <div class="mb-6">
+
+    <!-- Search and Filter Section -->
+    <div class="mb-6 space-y-4">
+        <div class="relative">
+            <input type="text" 
+                   id="threadSearch" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   placeholder="Search threads by subject or content..."
+                   autocomplete="off">
+        </div>
+        
         <div class="relative">
             <input type="text" 
                    id="labelSearch" 
@@ -22,14 +55,31 @@
         </div>
     </div>
 
+    <!-- Quick Actions -->
+    <div class="mb-6">
+        <div class="flex gap-2">
+            <button id="summarizeAll" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                Summarize All Pending
+            </button>
+            <button id="exportThreads" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                Export Threads
+            </button>
+        </div>
+    </div>
+
     <div class="bg-white shadow-md rounded-lg">
         <div class="p-6">
             {% if threads %}
             <div class="divide-y">
                 {% for thread in threads %}
-                <div class="py-4 flex justify-between items-center thread-row">
-                    <div class="flex flex-col">
-                        <span class="font-semibold text-gray-800">{{ thread.subject }}</span>
+                <div class="py-4 flex justify-between items-center thread-row hover:bg-gray-50 transition">
+                    <div class="flex flex-col flex-grow">
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold text-gray-800">{{ thread.subject }}</span>
+                            {% if thread.has_summary %}
+                            <span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">Summarized</span>
+                            {% endif %}
+                        </div>
                         <span class="text-xs text-gray-500">{{ thread.date|date:'M d, Y, g:i a' }}</span>
                         {% if thread.labels %}
                         <div class="flex flex-wrap gap-1 mt-1">
@@ -39,7 +89,7 @@
                         </div>
                         {% endif %}
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 ml-4">
                         {% if not thread.has_summary %}
                         <button class="summarize-btn px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 transition text-sm" data-thread-id="{{ thread.id }}">
                             Summarize
@@ -314,6 +364,63 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Failed to summarize thread. Please try again.');
             }
         });
+    });
+
+    // Thread search functionality
+    const threadSearch = document.getElementById('threadSearch');
+    threadSearch.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        const threadRows = document.querySelectorAll('.thread-row');
+        
+        threadRows.forEach(row => {
+            const subject = row.querySelector('.font-semibold').textContent.toLowerCase();
+            const shouldShow = subject.includes(query);
+            row.style.display = shouldShow ? 'flex' : 'none';
+            
+            const summaryContent = row.nextElementSibling;
+            if (summaryContent && summaryContent.classList.contains('summary-content')) {
+                summaryContent.style.display = shouldShow ? 'block' : 'none';
+            }
+        });
+    });
+
+    // Sort functionality
+    const sortSelect = document.getElementById('sortSelect');
+    sortSelect.addEventListener('change', function() {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('sort', this.value);
+        window.location.href = currentUrl.toString();
+    });
+
+    // Summarize All functionality
+    const summarizeAllBtn = document.getElementById('summarizeAll');
+    summarizeAllBtn.addEventListener('click', async function() {
+        const pendingThreads = document.querySelectorAll('.summarize-btn');
+        for (const btn of pendingThreads) {
+            btn.click();
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limiting
+        }
+    });
+
+    // Export functionality
+    const exportBtn = document.getElementById('exportThreads');
+    exportBtn.addEventListener('click', function() {
+        const threads = Array.from(document.querySelectorAll('.thread-row')).map(row => ({
+            subject: row.querySelector('.font-semibold').textContent,
+            date: row.querySelector('.text-xs.text-gray-500').textContent,
+            labels: Array.from(row.querySelectorAll('.text-xs.rounded-full')).map(label => label.textContent),
+            summary: row.nextElementSibling.querySelector('.text-gray-800')?.textContent || 'No summary'
+        }));
+
+        const blob = new Blob([JSON.stringify(threads, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'email-threads.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     });
 });
 </script>
