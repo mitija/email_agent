@@ -5,6 +5,28 @@
 <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
     <div class="flex justify-between items-center mb-4 sm:mb-6">
         <h1 class="text-xl sm:text-2xl font-bold">Email Strings</h1>
+        <div class="flex gap-2">
+            <select id="sortSelect" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="name" {% if current_sort == 'name' %}selected{% endif %}>Name A-Z</option>
+                <option value="-name" {% if current_sort == '-name' %}selected{% endif %}>Name Z-A</option>
+                <option value="email" {% if current_sort == 'email' %}selected{% endif %}>Email A-Z</option>
+                <option value="-email" {% if current_sort == '-email' %}selected{% endif %}>Email Z-A</option>
+                <option value="contact" {% if current_sort == 'contact' %}selected{% endif %}>Contact A-Z</option>
+                <option value="-contact" {% if current_sort == '-contact' %}selected{% endif %}>Contact Z-A</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="mb-6">
+        <div class="relative">
+            <input type="text" 
+                   id="emailStringSearch" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                   placeholder="Search by name, email, or contact..."
+                   value="{{ search_query }}"
+                   autocomplete="off">
+        </div>
     </div>
 
     <div class="bg-white shadow-md rounded-lg">
@@ -97,6 +119,39 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Pagination -->
+                {% if paginator.num_pages > 1 %}
+                <div class="mt-6 flex justify-center">
+                    <nav class="inline-flex rounded-md shadow">
+                        {% if page_obj.has_previous %}
+                        <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" 
+                           class="px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            &laquo; First
+                        </a>
+                        <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" 
+                           class="px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Previous
+                        </a>
+                        {% endif %}
+
+                        <span class="px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                            Page {{ page_obj.number }} of {{ paginator.num_pages }}
+                        </span>
+
+                        {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" 
+                           class="px-3 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Next
+                        </a>
+                        <a href="?page={{ paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" 
+                           class="px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Last &raquo;
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+                {% endif %}
             {% else %}
                 <p class="text-gray-600">No email strings found.</p>
             {% endif %}
@@ -107,29 +162,27 @@
 <!-- New Contact Modal -->
 <div id="new-contact-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-20">
     <div class="relative top-20 mx-auto p-5 border w-11/12 sm:w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-            <h3 class="text-lg font-medium leading-6 text-gray-900">Create New Contact</h3>
-            <form id="new-contact-form" class="mt-4">
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
-                        Name
-                    </label>
-                    <input type="text" id="name" name="name" required
-                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                </div>
-                <input type="hidden" id="email-string-id" name="email-string-id" value="">
-                <div class="flex justify-end space-x-2">
-                    <button type="button" id="cancel-create"
-                            class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">
-                        Cancel
-                    </button>
-                    <button type="submit"
-                            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                        Create
-                    </button>
-                </div>
-            </form>
-        </div>
+        <h3 class="text-lg font-medium leading-6 text-gray-900">Create New Contact</h3>
+        <form id="new-contact-form" class="mt-4">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
+                    Name
+                </label>
+                <input type="text" id="name" name="name" required
+                       class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <input type="hidden" id="email-string-id" name="email-string-id" value="">
+            <div class="flex justify-end space-x-2">
+                <button type="button" id="cancel-create"
+                        class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    Create
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}
@@ -188,148 +241,134 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Set up edit buttons
-    document.querySelectorAll('.edit-contact').forEach(editBtn => {
-        editBtn.addEventListener('click', function() {
-            const row = this.closest('.email-string-row');
-            const editor = row.querySelector('.contact-editor');
-            
-            // Hide all other editors first
-            document.querySelectorAll('.contact-editor').forEach(e => {
-                if (e !== editor) e.classList.add('hidden');
-            });
-            
-            editor.classList.toggle('hidden');
-            
-            if (!editor.classList.contains('hidden')) {
-                const searchInput = editor.querySelector('.contact-search');
-                searchInput.focus();
-                
-                document.querySelectorAll('.contact-dropdown').forEach(dropdown => {
-                    dropdown.classList.add('hidden');
-                });
-                
-                const dropdown = editor.querySelector('.contact-dropdown');
-                dropdown.classList.remove('hidden');
+    // Sort select functionality
+    const sortSelect = document.getElementById('sortSelect');
+    sortSelect.addEventListener('change', function() {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('sort', this.value);
+        window.location.href = currentUrl.toString();
+    });
+
+    // Search functionality
+    const emailStringSearch = document.getElementById('emailStringSearch');
+    let searchTimeout;
+
+    emailStringSearch.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            const currentUrl = new URL(window.location.href);
+            if (this.value.trim()) {
+                currentUrl.searchParams.set('search', this.value.trim());
+            } else {
+                currentUrl.searchParams.delete('search');
             }
+            currentUrl.searchParams.set('page', '1'); // Reset to first page on search
+            window.location.href = currentUrl.toString();
+        }, 300);
+    });
+
+    // Contact editor functionality
+    document.querySelectorAll('.edit-contact').forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('tr');
+            const editor = row.querySelector('.contact-editor');
+            editor.classList.remove('hidden');
         });
     });
-    
-    // Set up cancel buttons for editor
-    document.querySelectorAll('.cancel-edit').forEach(cancelBtn => {
-        cancelBtn.addEventListener('click', function() {
+
+    document.querySelectorAll('.cancel-edit').forEach(button => {
+        button.addEventListener('click', function() {
             const editor = this.closest('.contact-editor');
             editor.classList.add('hidden');
         });
     });
-    
-    // Set up search inputs
-    document.querySelectorAll('.contact-search').forEach(searchInput => {
-        const row = searchInput.closest('.email-string-row');
-        const emailStringId = row.dataset.emailStringId;
-        const dropdown = row.querySelector('.contact-dropdown');
-        let searchTimeout;
-        
-        searchInput.addEventListener('focus', function() {
-            document.querySelectorAll('.contact-dropdown').forEach(d => {
-                if (d !== dropdown) d.classList.add('hidden');
-            });
-            dropdown.classList.remove('hidden');
-        });
-        
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
+
+    // Contact search functionality
+    document.querySelectorAll('.contact-search').forEach(input => {
+        let debounceTimer;
+        input.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
             const query = this.value.trim();
+            const dropdown = this.closest('.contact-editor').querySelector('.contact-dropdown');
+            const results = dropdown.querySelector('.contact-results');
             
-            if (query.length < 2) {
-                dropdown.querySelector('.contact-results').innerHTML = '<div class="p-2 text-gray-500">Type at least 2 characters...</div>';
-                return;
-            }
-            
-            searchTimeout = setTimeout(() => {
-                fetch(`/api/contacts/search/?q=${encodeURIComponent(query)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const resultsDiv = dropdown.querySelector('.contact-results');
-                        if (data.results.length === 0) {
-                            resultsDiv.innerHTML = '<div class="p-2 text-gray-500">No contacts found</div>';
-                            return;
-                        }
+            if (query.length > 0) {
+                debounceTimer = setTimeout(async () => {
+                    try {
+                        const response = await fetch(`/api/contacts/search/?query=${encodeURIComponent(query)}`);
+                        const data = await response.json();
                         
-                        resultsDiv.innerHTML = data.results.map(contact => `
-                            <div class="contact-result p-2 hover:bg-blue-100 cursor-pointer" data-contact-id="${contact.id}">
-                                ${contact.name} (${contact.id})
-                            </div>
-                        `).join('');
-                        
-                        // Add click handlers to results
-                        resultsDiv.querySelectorAll('.contact-result').forEach(result => {
-                            result.addEventListener('click', function() {
-                                const contactId = this.dataset.contactId;
-                                updateEmailStringContact(emailStringId, contactId);
+                        results.innerHTML = '';
+                        if (data.contacts && data.contacts.length > 0) {
+                            data.contacts.forEach(contact => {
+                                const div = document.createElement('div');
+                                div.className = 'p-2 hover:bg-gray-100 cursor-pointer';
+                                div.textContent = `${contact.name} (${contact.id})`;
+                                div.addEventListener('click', () => {
+                                    updateEmailStringContact(
+                                        this.closest('.email-string-row').dataset.emailStringId,
+                                        contact.id
+                                    );
+                                });
+                                results.appendChild(div);
                             });
-                        });
-                    });
-            }, 300);
-        });
-    });
-    
-    // Set up create contact buttons
-    document.querySelectorAll('.create-contact').forEach(createBtn => {
-        createBtn.addEventListener('click', function() {
-            const row = this.closest('.email-string-row');
-            const emailStringId = row.dataset.emailStringId;
-            
-            document.getElementById('email-string-id').value = emailStringId;
-            document.getElementById('new-contact-modal').classList.remove('hidden');
-        });
-    });
-    
-    // Set up new contact form
-    document.getElementById('new-contact-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const emailStringId = document.getElementById('email-string-id').value;
-        const name = document.getElementById('name').value;
-        
-        fetch('/api/contacts/create/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({
-                name: name,
-                email_string_id: emailStringId
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Find the row and update the contact name
-                const row = document.querySelector(`.email-string-row[data-email-string-id="${emailStringId}"]`);
-                const contactNameSpan = row.querySelector('.contact-name');
-                contactNameSpan.textContent = `${data.contact.name} (${data.contact.id})`;
-                
-                // Hide the contact editor
-                const editor = row.querySelector('.contact-editor');
-                editor.classList.add('hidden');
-                
-                // Clear the search input
-                const searchInput = editor.querySelector('.contact-search');
-                searchInput.value = '';
-                
-                // Hide the modal
-                document.getElementById('new-contact-modal').classList.add('hidden');
-                
-                // Clear the form
-                document.getElementById('name').value = '';
+                        } else {
+                            results.innerHTML = '<div class="p-2 text-gray-500 text-sm">No contacts found</div>';
+                        }
+                        dropdown.classList.remove('hidden');
+                    } catch (error) {
+                        console.error('Error searching contacts:', error);
+                    }
+                }, 300);
+            } else {
+                results.innerHTML = '<div class="p-2 text-gray-500 text-sm">Type to search...</div>';
+                dropdown.classList.add('hidden');
             }
         });
     });
-    
-    // Set up cancel create button
+
+    // Create contact functionality
+    document.querySelectorAll('.create-contact').forEach(button => {
+        button.addEventListener('click', function() {
+            const modal = document.getElementById('new-contact-modal');
+            const emailStringId = this.closest('.email-string-row').dataset.emailStringId;
+            document.getElementById('email-string-id').value = emailStringId;
+            modal.classList.remove('hidden');
+        });
+    });
+
     document.getElementById('cancel-create').addEventListener('click', function() {
         document.getElementById('new-contact-modal').classList.add('hidden');
+    });
+
+    document.getElementById('new-contact-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const name = document.getElementById('name').value;
+        const emailStringId = document.getElementById('email-string-id').value;
+        
+        try {
+            const response = await fetch('/api/contacts/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    name: name,
+                    email_string_id: emailStringId
+                })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Failed to create contact: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error creating contact:', error);
+            alert('Failed to create contact. Please try again.');
+        }
     });
 });
 

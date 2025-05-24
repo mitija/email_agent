@@ -4,15 +4,52 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.core.paginator import Paginator
+from django.db.models import Q
 import json
 from core.models import EmailString, Contact, Email
 
 @login_required
 def email_string_list(request):
+    # Get search query
+    search_query = request.GET.get('search', '').strip()
+    
+    # Get sort parameter with default to name
+    sort_by = request.GET.get('sort', 'name')
+    
+    # Validate sort parameter to prevent SQL injection
+    valid_sort_fields = ['name', '-name', 'email', '-email', 'contact', '-contact', 'original_string', '-original_string']
+    if sort_by not in valid_sort_fields:
+        sort_by = 'name'
+    
+    # Base queryset
     email_strings = EmailString.objects.all().select_related('contact', 'email')
+    
+    # Apply search filter if query exists
+    if search_query:
+        email_strings = email_strings.filter(
+            Q(name__icontains=search_query) |
+            Q(email__email__icontains=search_query) |
+            Q(original_string__icontains=search_query) |
+            Q(contact__name__icontains=search_query)
+        ).distinct()
+    
+    # Apply sorting
+    email_strings = email_strings.order_by(sort_by)
+    
+    # Pagination
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(email_strings, 20)  # Show 20 items per page
+    page_obj = paginator.get_page(page_number)
+    
     return render(request, 'core/email_string_list.html', {
-        'email_strings': email_strings,
-        'title': 'Email Strings'
+        'email_strings': page_obj,
+        'page_obj': page_obj,
+        'paginator': paginator,
+        'title': 'Email Strings',
+        'current_sort': sort_by,
+        'search_query': search_query,
+        'total_email_strings': paginator.count
     })
 
 @login_required
