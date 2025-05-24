@@ -3,10 +3,15 @@ from core.views.contact_review import ContactReviewListView, ContactReviewUpdate
 from core.views.orphaned_contacts import OrphanedContactsListView, delete_contact, delete_all_orphaned_contacts
 from core.views.thread_list import thread_list, summarize_thread, get_labels, thread_detail
 from core.views.home import HomeView
+from core.views.contact_list import ContactListView, ContactDetailView
 
 urlpatterns = [
     # Home page
     path('', HomeView.as_view(), name='home'),
+    
+    # Contact list and details
+    path('contacts/', ContactListView.as_view(), name='contact-list'),
+    path('contacts/<int:pk>/', ContactDetailView.as_view(), name='contact-detail'),
     
     # Contact review
     path('contact-review/', ContactReviewListView.as_view(), name='contact_review_list'),

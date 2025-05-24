@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-6">
+        <a href="{% url 'contact-list' %}" class="text-indigo-600 hover:text-indigo-900">
+            ← Back to Contacts
+        </a>
+    </div>
+
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h1 class="text-2xl font-bold text-gray-900">{{ contact.name }}</h1>
+        </div>
+
+        <div class="px-6 py-4">
+            <div class="grid grid-cols-1 gap-6">
+                <!-- Email Addresses -->
+                <div>
+                    <h2 class="text-lg font-medium text-gray-900 mb-2">Email Addresses</h2>
+                    <div class="space-y-2">
+                        {% for email in contact.emails.all %}
+                        <div class="text-sm text-gray-600">{{ email.address }}</div>
+                        {% empty %}
+                        <div class="text-sm text-gray-500">No email addresses found.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Knowledge -->
+                {% if contact.knowledge %}
+                <div>
+                    <h2 class="text-lg font-medium text-gray-900 mb-2">Context</h2>
+                    <div class="text-sm text-gray-600 whitespace-pre-wrap">{{ contact.knowledge }}</div>
+                </div>
+                {% endif %}
+
+                <!-- Created/Updated -->
+                <div class="text-sm text-gray-500">
+                    <div>Created: {{ contact.created_at|date:"F j, Y, g:i a" }}</div>
+                    <div>Last Updated: {{ contact.updated_at|date:"F j, Y, g:i a" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
