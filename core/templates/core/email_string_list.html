@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Email Strings</h1>
+    </div>
+
+    <div class="bg-white shadow-md rounded-lg">
+        <div class="p-6">
+            {% if email_strings %}
+                <div class="space-y-4">
+                    {% for email_string in email_strings %}
+                    <div class="border-b pb-4 email-string-row" data-email-string-id="{{ email_string.id }}">
+                        <div class="flex justify-between items-start">
+                            <div class="w-1/3 pr-4">
+                                <h3 class="font-semibold">{{ email_string.name }}</h3>
+                                <p class="text-gray-600">{{ email_string.email.email }}</p>
+                                <p class="text-sm text-gray-500">Original: {{ email_string.original_string }}</p>
+                            </div>
+                            <div class="w-2/3">
+                                <!-- Contact Display (Default View) -->
+                                <div class="contact-display flex items-center justify-between bg-gray-50 p-2 rounded border">
+                                    <div>
+                                        <span class="contact-name overflow-hidden">
+                                            {% if email_string.contact %}
+                                                {{ email_string.contact.name }} ({{ email_string.contact.id }})
+                                            {% else %}
+                                                <span class="text-gray-400">No contact assigned</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        {% if email_string.contact %}
+                                        <button class="expand-contact text-gray-500 hover:text-blue-500 mr-2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                        {% endif %}
+                                        <button class="edit-contact text-gray-500 hover:text-blue-500">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Contact Details (Hidden by Default) -->
+                                <div class="contact-details hidden mt-2 bg-gray-50 p-3 rounded border">
+                                    {% if email_string.contact %}
+                                    <form class="contact-form space-y-3">
+                                        <input type="hidden" name="contact_id" value="{{ email_string.contact.id }}">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Name</label>
+                                            <input type="text" name="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                value="{{ email_string.contact.name }}">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Knowledge</label>
+                                            <textarea name="knowledge" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">{{ email_string.contact.knowledge|default:'' }}</textarea>
+                                        </div>
+                                        <div class="flex justify-end space-x-2">
+                                            <button type="button" class="cancel-details px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 bg-white hover:bg-gray-50">
+                                                Cancel
+                                            </button>
+                                            <button type="submit" class="px-3 py-1 bg-blue-600 border border-transparent rounded-md text-sm text-white hover:bg-blue-700">
+                                                Update
+                                            </button>
+                                        </div>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Contact Editor (Hidden by Default) -->
+                                <div class="contact-editor hidden">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               class="contact-search w-full rounded border p-2"
+                                               placeholder="Search contacts..."
+                                               autocomplete="off"
+                                               data-current-contact-id="{% if email_string.contact %}{{ email_string.contact.id }}{% endif %}">
+                                        <div class="contact-dropdown absolute z-50 w-full bg-white border rounded mt-1 max-h-60 overflow-y-auto shadow-md">
+                                            <div class="contact-results p-2">
+                                                <div class="p-2 text-gray-500">Type to search...</div>
+                                            </div>
+                                            <div class="p-2 border-t">
+                                                <div class="create-contact cursor-pointer p-2 hover:bg-blue-100 text-blue-600 rounded">
+                                                    + Create New Contact
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex mt-2 space-x-2">
+                                        <button class="cancel-edit text-sm px-2 py-1 bg-gray-200 rounded">Cancel</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-gray-600">No email strings found.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- New Contact Modal -->
+<div id="new-contact-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-20">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium leading-6 text-gray-900">Create New Contact</h3>
+            <form id="new-contact-form" class="mt-4">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
+                        Name
+                    </label>
+                    <input type="text" id="name" name="name" required
+                           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                </div>
+                <input type="hidden" id="email-string-id" name="email-string-id" value="">
+                <div class="flex justify-end space-x-2">
+                    <button type="button" id="cancel-create"
+                            class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        Create
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up edit buttons
+    document.querySelectorAll('.edit-contact').forEach(editBtn => {
+        editBtn.addEventListener('click', function() {
+            const row = this.closest('.email-string-row');
+            const display = row.querySelector('.contact-display');
+            const editor = row.querySelector('.contact-editor');
+            const details = row.querySelector('.contact-details');
+            
+            display.classList.add('hidden');
+            editor.classList.remove('hidden');
+            details.classList.add('hidden');
+            
+            const searchInput = editor.querySelector('.contact-search');
+            searchInput.focus();
+            
+            document.querySelectorAll('.contact-dropdown').forEach(dropdown => {
+                dropdown.classList.add('hidden');
+            });
+            
+            const dropdown = editor.querySelector('.contact-dropdown');
+            dropdown.classList.remove('hidden');
+        });
+    });
+    
+    // Set up expand buttons
+    document.querySelectorAll('.expand-contact').forEach(expandBtn => {
+        expandBtn.addEventListener('click', function() {
+            const row = this.closest('.email-string-row');
+            const details = row.querySelector('.contact-details');
+            const expandIcon = this.querySelector('svg');
+            
+            if (details.classList.contains('hidden')) {
+                details.classList.remove('hidden');
+                expandIcon.style.transform = 'rotate(180deg)';
+            } else {
+                details.classList.add('hidden');
+                expandIcon.style.transform = '';
+            }
+        });
+    });
+    
+    // Set up contact form submission
+    document.querySelectorAll('.contact-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const row = this.closest('.email-string-row');
+            const emailStringId = row.dataset.emailStringId;
+            const contactId = this.querySelector('input[name="contact_id"]').value;
+            const name = this.querySelector('input[name="name"]').value;
+            const knowledge = this.querySelector('textarea[name="knowledge"]').value;
+            
+            updateContactDetails(emailStringId, contactId, name, knowledge);
+        });
+    });
+    
+    // Set up cancel buttons for details
+    document.querySelectorAll('.cancel-details').forEach(cancelBtn => {
+        cancelBtn.addEventListener('click', function() {
+            const row = this.closest('.email-string-row');
+            const details = row.querySelector('.contact-details');
+            const expandIcon = row.querySelector('.expand-contact svg');
+            
+            details.classList.add('hidden');
+            expandIcon.style.transform = '';
+        });
+    });
+    
+    // Set up cancel buttons for editor
+    document.querySelectorAll('.cancel-edit').forEach(cancelBtn => {
+        cancelBtn.addEventListener('click', function() {
+            const row = this.closest('.email-string-row');
+            const display = row.querySelector('.contact-display');
+            const editor = row.querySelector('.contact-editor');
+            
+            editor.classList.add('hidden');
+            display.classList.remove('hidden');
+        });
+    });
+    
+    // Set up search inputs
+    document.querySelectorAll('.contact-search').forEach(searchInput => {
+        const row = searchInput.closest('.email-string-row');
+        const emailStringId = row.dataset.emailStringId;
+        const dropdown = row.querySelector('.contact-dropdown');
+        let searchTimeout;
+        
+        searchInput.addEventListener('focus', function() {
+            document.querySelectorAll('.contact-dropdown').forEach(d => {
+                if (d !== dropdown) d.classList.add('hidden');
+            });
+            dropdown.classList.remove('hidden');
+        });
+        
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const query = this.value.trim();
+            
+            if (query.length < 2) {
+                dropdown.querySelector('.contact-results').innerHTML = '<div class="p-2 text-gray-500">Type at least 2 characters...</div>';
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                fetch(`/api/contacts/search/?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const resultsDiv = dropdown.querySelector('.contact-results');
+                        if (data.length === 0) {
+                            resultsDiv.innerHTML = '<div class="p-2 text-gray-500">No contacts found</div>';
+                            return;
+                        }
+                        
+                        resultsDiv.innerHTML = data.map(contact => `
+                            <div class="contact-result p-2 hover:bg-blue-100 cursor-pointer" data-contact-id="${contact.id}">
+                                ${contact.name}
+                            </div>
+                        `).join('');
+                        
+                        // Add click handlers to results
+                        resultsDiv.querySelectorAll('.contact-result').forEach(result => {
+                            result.addEventListener('click', function() {
+                                const contactId = this.dataset.contactId;
+                                updateEmailStringContact(emailStringId, contactId);
+                            });
+                        });
+                    });
+            }, 300);
+        });
+    });
+    
+    // Set up create contact buttons
+    document.querySelectorAll('.create-contact').forEach(createBtn => {
+        createBtn.addEventListener('click', function() {
+            const row = this.closest('.email-string-row');
+            const emailStringId = row.dataset.emailStringId;
+            
+            document.getElementById('email-string-id').value = emailStringId;
+            document.getElementById('new-contact-modal').classList.remove('hidden');
+        });
+    });
+    
+    // Set up new contact form
+    document.getElementById('new-contact-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const emailStringId = document.getElementById('email-string-id').value;
+        const name = document.getElementById('name').value;
+        
+        fetch('/api/contacts/create/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                name: name,
+                email_string_id: emailStringId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            }
+        });
+    });
+    
+    // Set up cancel create button
+    document.getElementById('cancel-create').addEventListener('click', function() {
+        document.getElementById('new-contact-modal').classList.add('hidden');
+    });
+});
+
+function updateContactDetails(emailStringId, contactId, name, knowledge) {
+    fetch('/api/contacts/update/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            contact_id: contactId,
+            name: name,
+            knowledge: knowledge
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        }
+    });
+}
+
+function updateEmailStringContact(emailStringId, contactId) {
+    fetch('/api/email-strings/update-contact/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            email_string_id: emailStringId,
+            contact_id: contactId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        }
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %} 
