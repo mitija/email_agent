@@ -81,6 +81,31 @@
                             {% endif %}
                         </div>
                         <span class="text-xs text-gray-500">{{ thread.date|date:'M d, Y, g:i a' }}</span>
+                        
+                        <!-- Participant Information -->
+                        <div class="mt-2 space-y-1">
+                            {% if thread.first_sender %}
+                            <div class="text-sm">
+                                <span class="font-medium text-gray-700">Initiated by:</span>
+                                <span class="text-gray-600">{{ thread.first_sender }}</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if thread.active_participants %}
+                            <div class="text-sm">
+                                <span class="font-medium text-gray-700">Active participants:</span>
+                                <span class="text-gray-600">{{ thread.active_participants|join:", " }}</span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if thread.other_participants %}
+                            <div class="text-sm">
+                                <span class="font-medium text-gray-700">Other participants:</span>
+                                <span class="text-gray-600">{{ thread.other_participants|join:", " }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
                         {% if thread.labels %}
                         <div class="flex flex-wrap gap-1 mt-1">
                             {% for label in thread.labels %}

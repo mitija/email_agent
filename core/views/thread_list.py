@@ -37,6 +37,17 @@ def thread_list(request):
             summarized_count += 1
         latest_summary = ThreadSummary.objects.filter(thread=thread).order_by('-timestamp').first()
         
+        # Get all participants
+        all_participants = thread.participants
+        
+        # Get active participants (those who sent messages)
+        active_participants = set()
+        for email in thread.email_set.all():
+            active_participants.add(email.sender_str.original_string)
+        
+        # Get other participants (those who didn't send messages)
+        other_participants = set(p.original_string for p in all_participants) - active_participants
+        
         thread_data.append({
             'id': thread.id,
             'subject': thread.subject,
@@ -46,6 +57,9 @@ def thread_list(request):
             'action': latest_summary.action if latest_summary else None,
             'rationale': latest_summary.rationale if latest_summary else None,
             'labels': [label.name for label in first_email.labels.all()] if first_email else [],
+            'first_sender': first_email.sender_str.original_string if first_email else None,
+            'active_participants': sorted(list(active_participants)),
+            'other_participants': sorted(list(other_participants)),
         })
     
     return render(request, 'core/thread_list.html', {
