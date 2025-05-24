@@ -4,7 +4,7 @@ from core.views.orphaned_contacts import OrphanedContactsListView, delete_contac
 from core.views.thread_list import thread_list, summarize_thread, get_labels, thread_detail
 from core.views.home import HomeView
 from core.views.contact_list import ContactListView, ContactDetailView
-from core.views.email_string_list import email_string_list, update_email_string_contact
+from core.views.email_string_list import email_string_list, update_email_string_contact, create_contact
 
 urlpatterns = [
     # Home page
@@ -35,4 +35,7 @@ urlpatterns = [
     # Email strings
     path('email-strings/', email_string_list, name='email_string_list'),
     path('api/email-strings/update-contact/', update_email_string_contact, name='update_email_string_contact'),
+    path('api/contacts/search/', search_contacts, name='api_search_contacts'),
+    path('api/contacts/<int:contact_id>/', ContactDetailView.as_view(), name='api_contact_detail'),
+    path('api/contacts/create/', create_contact, name='api_create_contact'),
 ] 

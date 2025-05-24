@@ -1,6 +1,7 @@
 from django.views.generic import ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
+from django.http import JsonResponse
 from core.models.contact import Contact
 
 class ContactListView(LoginRequiredMixin, ListView):
@@ -42,8 +43,30 @@ class ContactDetailView(LoginRequiredMixin, DetailView):
     model = Contact
     template_name = 'core/contact_detail.html'
     context_object_name = 'contact'
+    pk_url_kwarg = 'contact_id'  # This matches the URL parameter name
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['title'] = f'Contact: {self.object.name}'
-        return context 
+        return context
+
+    def get(self, request, *args, **kwargs):
+        try:
+            self.object = self.get_object()
+            
+            # If it's an API request (checking the URL pattern)
+            if request.path.startswith('/api/'):
+                return JsonResponse({
+                    'id': self.object.id,
+                    'name': self.object.name,
+                    'knowledge': self.object.knowledge,
+                    'emails': [email.email for email in self.object.emails.all()]
+                })
+            
+            # Otherwise, return the normal template response
+            context = self.get_context_data()
+            return self.render_to_response(context)
+        except Contact.DoesNotExist:
+            return JsonResponse({
+                'error': 'Contact not found'
+            }, status=404) 
