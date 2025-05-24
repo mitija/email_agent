@@ -167,6 +167,8 @@ class GmailHelper:
                 msg['Subject'] = header['value']
             elif header['name'] == 'To':
                 msg['To'] = header['value']
+            elif header['name'] == 'Cc':
+                msg['Cc'] = header['value']
             elif header['name'] == 'Date':
                 msg['Date'] = header['value']
 

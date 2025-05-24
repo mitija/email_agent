@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from core.models import Thread, ThreadSummary, Label
 from core.llm.helper import build_graph
@@ -82,4 +82,20 @@ def summarize_thread(request, thread_id):
         'summary': summary_data['summary'],
         'action': summary_data['action'],
         'rationale': summary_data['rationale']
-    }) 
+    })
+
+@login_required
+def thread_detail(request, thread_id):
+    thread = get_object_or_404(Thread, id=thread_id)
+    emails = thread.email_set.all().order_by('date')
+    latest_summary = ThreadSummary.objects.filter(thread=thread).order_by('-timestamp').first()
+    
+    context = {
+        'thread': thread,
+        'emails': emails,
+        'summary': latest_summary.summary if latest_summary else None,
+        'action': latest_summary.action if latest_summary else None,
+        'rationale': latest_summary.rationale if latest_summary else None,
+    }
+    
+    return render(request, 'core/thread_detail.html', context) 

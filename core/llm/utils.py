@@ -8,7 +8,7 @@ from langchain.prompts import PromptTemplate
 from core.llm.prompts import PROMPT_SUMMARY
 
 # Initialize LLM instances
-llm = OllamaLLM(model="gemma3:4b-it-qat")
+llm = OllamaLLM(model="gemma3:12b-it-qat")
 summary_prompt = PromptTemplate(
     input_variables=["conversation", "participants"],
     template=PROMPT_SUMMARY

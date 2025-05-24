@@ -6,13 +6,19 @@ These prompts are used by the LLM to generate summaries and extract knowledge.
 
 # Define prompts as constants
 PROMPT_SUMMARY = """
-This is not an interactive session. You must read this conversation and assess:
-- a summary
-- participants and what we can infer about these participants, in particular the company they work for, their job, and their role in the discussion
-- what action to be done: Ignore, Need to Know, Need to respond
-- reason for providing that action recommendation
+This is not an interactive session. The objective is to
+- assess what to do based on the messages received
+- we also want to maintain general knowledge about participants not specific to these messages, such as the organisation they work for, their position, etc.
 
-Here is what we know about the participants:
+Therefore, your role is to:
+- analysis of the discussion
+  - provide a summary of the discussion
+  - what action to be done: Ignore, Need to Know, Need to respond
+  - reason for providing that action recommendation
+  - assess who are the participants in the discussion and what is their role
+- assess whether we have gained additional general knowledge about these participants
+
+Here is what we know so far about the participants:
 {participants}
 
 Here is the conversation:
@@ -20,17 +26,18 @@ Here is the conversation:
 
 Please return your answer strictly in JSON format using the following schema:
 {{
-  "action": "IGNORE | NEED_TO_KNOW | NEED_TO_RESPOND",
   "summary": "a short summary of the conversation",
+  "rationale": "a short explanation of why you chose this action"
+  "action": "IGNORE | NEED_TO_KNOW | NEED_TO_RESPOND",
   "participants": [
       {{ 
           "name": "name",
           "email": "email",
           "id": "Contact internal ID (should be an int)",
-          "relevant information": "relevant information about this person gained from the thread" 
+          "role in the thread": "Role of that person in the thread",
+          "updated_knowledge": "Updated generic knowledge of that person"
       }},
   ],
-  "rationale": "a short explanation of why you chose this action"
 }}
 """
 
@@ -59,3 +66,24 @@ Name: %s
 Appears as: %s
 Existig knowedge: %s
 """ 
+
+EMAIL_TEMPLATE = """
+From: {sender}
+To: {to_recipients}
+Cc: {cc_recipients}
+Date: {date}
+Labels: {labels}
+Subject: {subject}
+Email content: {content}
+--
+"""
+
+HEADER_TEMPLATE = """
+From: {sender}
+To: {to_recipients}
+Cc: {cc_recipients}
+Date: {date}
+Labels: {labels}
+Subject: {subject}
+snippet: {snippet}
+"""

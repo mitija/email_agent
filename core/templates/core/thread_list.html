@@ -100,6 +100,9 @@
                             &gt;
                         </button>
                         {% endif %}
+                        <a href="{% url 'thread_detail' thread.id %}" class="px-3 py-1 rounded bg-gray-600 text-white hover:bg-gray-700 transition text-sm">
+                            View Details
+                        </a>
                     </div>
                 </div>
                 <div class="summary-content bg-gray-50 border border-gray-200 rounded p-3 mt-2 mb-4 mx-2" id="summary-{{ thread.id }}" style="display: none;">
