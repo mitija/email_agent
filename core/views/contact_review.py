@@ -99,7 +99,7 @@ def complete_review(request):
 
 def search_contacts(request):
     """AJAX endpoint for searching contacts"""
-    query = request.GET.get('q', '')
+    query = request.GET.get('query', '')
     limit = int(request.GET.get('limit', 10))
     
     if not query:
