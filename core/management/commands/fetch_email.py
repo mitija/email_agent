@@ -7,6 +7,45 @@ from pytz import timezone
 import re
 import unicodedata
 
+def _is_calendar_invite(message):
+    """Check if an email is a calendar invite or attendance notification.
+    Returns True if the email appears to be a calendar-related message."""
+    # Check for common calendar invite indicators in headers
+    headers = message.get('payload', {}).get('headers', [])
+    for header in headers:
+        if header['name'].lower() in ['x-microsoft-cdo-busystatus', 'x-microsoft-cdo-intendedbusystatus']:
+            return True
+        if header['name'].lower() == 'content-class' and header['value'].lower() == 'urn:content-classes:calendarmessage':
+            return True
+        if header['name'].lower() == 'x-microsoft-cdo-messageclass' and 'ipm.schedule.meeting' in header['value'].lower():
+            return True
+
+    # Check for calendar-related content in the body
+    body = message.get('Body', '').lower()
+    calendar_indicators = [
+        'calendar invitation',
+        'calendar event',
+        'meeting invitation',
+        'meeting request',
+        'invitation to',
+        'you have been invited',
+        'you are invited',
+        'accept this invitation',
+        'decline this invitation',
+        'tentative',
+        'when:',
+        'where:',
+        'calendar:',
+        'organizer:',
+        'attendees:',
+        'ics file',
+        'ical file',
+        'calendar.ics',
+        'calendar.ical'
+    ]
+    
+    return any(indicator in body for indicator in calendar_indicators)
+
 def _process_email(message, thread):
     """ This method will process one email
     parameters: message - a message returned from Gmail, thread: the Django thread object
@@ -16,7 +55,6 @@ def _process_email(message, thread):
     """
     # Log that we process message id and subject
     print(f"Processing message id: {message['id']} from: {message['From']} subject: {message['Subject']}")
-
 
     to_str = message.get("To", "").strip()
     cc_str = message.get("Cc", "").strip()
@@ -46,7 +84,6 @@ def _process_email(message, thread):
     )
 
     # Process to and from fields
-
     for receiver in to_str.split(","):
         if not receiver.strip():
             continue
@@ -77,6 +114,16 @@ def _process_email(message, thread):
             }
         )
         email_obj.labels.add(label_obj)
+
+    # Check if this is a calendar invite and add the Calendar label if needed
+    if _is_calendar_invite(message):
+        calendar_label, created = Label.objects.get_or_create(
+            name="Calendar",
+            defaults={
+                "gmail_label_id": "CALENDAR",  # This is a custom label, not a Gmail system label
+            }
+        )
+        email_obj.labels.add(calendar_label)
 
     email_obj.save()
 
