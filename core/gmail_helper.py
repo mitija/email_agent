@@ -39,7 +39,16 @@ def _extract_body_from_gmail_message(payload):
         if data:
             decoded = base64.urlsafe_b64decode(data.encode("utf-8")).decode("utf-8", errors="replace")
             if payload["mimeType"] == "text/html":
-                md_body = markdownify.markdownify(bleach.clean(decoded, strip=True))
+                # First clean the HTML and remove display:none elements
+                cleaned_html = bleach.clean(decoded, 
+                    strip=False,
+                    tags=['div', 'span', 'p', 'br', 'b', 'i', 'u', 'em', 'strong', 'a', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'tr', 'td', 'th', 'thead', 'tbody'],
+                    attributes={'*': ['style', 'class', 'id', 'href', 'src', 'alt', 'title']}
+                )
+                # Remove elements with display:none
+                cleaned_html = re.sub(r'<[^>]*style="[^"]*display:\s*none[^"]*"[^>]*>.*?</[^>]*>', '', cleaned_html, flags=re.DOTALL)
+                # Convert to markdown
+                md_body = markdownify.markdownify(cleaned_html)
             elif payload["mimeType"] == "text/plain":
                 text_body = decoded
     body = text_body or md_body or ""
@@ -68,6 +77,26 @@ def _extract_body_from_gmail_message(payload):
         '\uFEFF': '',     # ZERO WIDTH NO-BREAK SPACE (BOM)
         '\u180E': '',     # MONGOLIAN VOWEL SEPARATOR
         '&nbsp;': ' ',    # HTML NO-BREAK SPACE
+        '\u2028': '\n',   # LINE SEPARATOR
+        '\u2029': '\n\n', # PARAGRAPH SEPARATOR
+        '\u2060': '',     # WORD JOINER
+        '\u2061': '',     # FUNCTION APPLICATION
+        '\u2062': '',     # INVISIBLE TIMES
+        '\u2063': '',     # INVISIBLE SEPARATOR
+        '\u2064': '',     # INVISIBLE PLUS
+        '\u206A': '',     # INHIBIT SYMMETRIC SWAPPING
+        '\u206B': '',     # ACTIVATE SYMMETRIC SWAPPING
+        '\u206C': '',     # INHIBIT ARABIC FORM SHAPING
+        '\u206D': '',     # ACTIVATE ARABIC FORM SHAPING
+        '\u206E': '',     # NATIONAL DIGIT SHAPES
+        '\u206F': '',     # NOMINAL DIGIT SHAPES
+        '\u200E': '',     # LEFT-TO-RIGHT MARK
+        '\u200F': '',     # RIGHT-TO-LEFT MARK
+        '\u202A': '',     # LEFT-TO-RIGHT EMBEDDING
+        '\u202B': '',     # RIGHT-TO-LEFT EMBEDDING
+        '\u202C': '',     # POP DIRECTIONAL FORMATTING
+        '\u202D': '',     # LEFT-TO-RIGHT OVERRIDE
+        '\u202E': '',     # RIGHT-TO-LEFT OVERRIDE
     }
 
     # Replace all special space characters

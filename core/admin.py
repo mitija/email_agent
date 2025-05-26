@@ -28,7 +28,7 @@ class ContactAdmin(admin.ModelAdmin):
 @admin.register(Email)
 class EmailAdmin(admin.ModelAdmin):
     list_display = ('date', 'sender_str', 'subject')
-    search_fields = ('subject', 'sender_str', 'sender__name')
+    search_fields = ('subject', 'sender_str__name', 'sender_str__email__email')
     autocomplete_fields = ('sender_str', 'to_str', 'cc_str', 'labels')
     list_filter = ('date',)
 

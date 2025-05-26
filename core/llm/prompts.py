@@ -85,5 +85,5 @@ Cc: {cc_recipients}
 Date: {date}
 Labels: {labels}
 Subject: {subject}
-snippet: {snippet}
+Snippet: {snippet}
 """

@@ -8,8 +8,8 @@ import sys
 from string import Template
 from langchain.prompts import PromptTemplate
 from core.llm.types import ParticipantSet
-from core.llm.utils import sanitize_json, llm, summary_chain
-from core.llm.prompts import PROMPT_PARTICIPANT_KNOWLEDGE, EMAIL_TEMPLATE, HEADER_TEMPLATE
+from core.llm.utils import sanitize_json, llm, summary_chain, log_llm_prompt
+from core.llm.prompts import PROMPT_PARTICIPANT_KNOWLEDGE, EMAIL_TEMPLATE, HEADER_TEMPLATE, PROMPT_SUMMARY
 # Import models lazily to prevent AppRegistryNotReady errors
 from django.apps import apps
 
@@ -67,6 +67,13 @@ def summarize_thread_node(state):
         "conversation": state["conversation"],
         "participants": state["knowledge"],
     }
+    
+    # Log the prompt before invoking
+    log_llm_prompt(
+        prompt_name="thread_summary",
+        prompt_input=prompt_input,
+        prompt_template=PROMPT_SUMMARY
+    )
     
     result = summary_chain.invoke(prompt_input)
     
@@ -146,10 +153,5 @@ def update_knowledge_node(state):
 
         contact.knowledge = participant.get("updated_knowledge")
         contact.save()
-        # Finally, we search by email. We will check if several participant use the same email, in which case we will not
-        # be able to conclude
 
-        pass
-
-    
     return state["thread_summary"] 

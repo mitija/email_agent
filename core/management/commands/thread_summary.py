@@ -6,7 +6,18 @@
 from django.core.management.base import BaseCommand
 from core.models import Thread, ThreadSummary
 from core.llm import get_langgraph_helper
+import json
+import logging
+from datetime import datetime
+import codecs
 
+# Configure logging with UTF-8 encoding
+logging.basicConfig(
+    filename='llm_prompts.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s',
+    encoding='utf-8'
+)
 
 class Command(BaseCommand):
     help = "Create a summary for each thread with more than 1 email and the label PERSONAL"
@@ -28,7 +39,34 @@ class Command(BaseCommand):
 
         # Now we create a summary for the thread
         langgraph_helper = get_langgraph_helper()
-        summary = langgraph_helper.invoke({"thread": thread})
+        summary_result = langgraph_helper.invoke({"thread": thread})
+        
+        # Extract only the serializable summary data
+        summary_data = {
+            'summary': summary_result.get('summary', ''),
+            'action': summary_result.get('action', ''),
+            'rationale': summary_result.get('rationale', ''),
+            'participants': summary_result.get('participants', [])
+        }
+        
+        # Log the summary in a human-readable format
+        log_entry = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'thread_id': thread.id,
+            'thread_subject': thread.subject,
+            'thread_date': thread.date.isoformat(),
+            'summary': summary_data
+        }
+        
+        # Write to log file with proper formatting
+        with codecs.open('llm_prompts.log', 'a', encoding='utf-8') as f:
+            f.write(f"=== {log_entry['timestamp']} - Thread Summary ===\n")
+            f.write(f"Thread ID: {log_entry['thread_id']}\n")
+            f.write(f"Subject: {log_entry['thread_subject']}\n")
+            f.write(f"Date: {log_entry['thread_date']}\n")
+            f.write("\nSummary:\n")
+            f.write(json.dumps(log_entry['summary'], ensure_ascii=False, indent=2))
+            f.write("\n\n" + "="*50 + "\n\n")
 
 
 
