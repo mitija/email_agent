@@ -19,15 +19,21 @@ logging.basicConfig(
     encoding='utf-8'
 )
 
+logger = logging.getLogger(__name__)
+
 class Command(BaseCommand):
     help = "Create a summary for each thread with more than 1 email and the label PERSONAL"
     
     def handle(self, *args, **options):
         """This will create a summary for each thread with more than 1 email and the label PERSONAL"""
 
-        # Get all threads where the last email is CATEGRORY_PERSONAL and where there is not already a summary
+        # Get all threads where the last email has CATEGORY_PERSONAL label but not CALENDAR label
+        # and where there is not already a summary
         threads = Thread.objects.filter(
-                last_email__labels__name="CATEGORY_PERSONAL",
+                last_email__labels__name="CATEGORY_PERSONAL"
+        ).exclude(
+                last_email__labels__name="CALENDAR"
+        ).filter(
                 last_email__threadsummary__isnull=True
         ).distinct() # type: ignore[attr-defined]
 
@@ -39,7 +45,8 @@ class Command(BaseCommand):
 
         # Now we create a summary for the thread
         langgraph_helper = get_langgraph_helper()
-        summary_result = langgraph_helper.invoke({"thread": thread})
+        result = langgraph_helper.invoke({"thread": thread})
+        summary_result = result["thread_summary"]
         
         # Extract only the serializable summary data
         summary_data = {
@@ -59,14 +66,30 @@ class Command(BaseCommand):
         }
         
         # Write to log file with proper formatting
-        with codecs.open('llm_prompts.log', 'a', encoding='utf-8') as f:
-            f.write(f"=== {log_entry['timestamp']} - Thread Summary ===\n")
-            f.write(f"Thread ID: {log_entry['thread_id']}\n")
-            f.write(f"Subject: {log_entry['thread_subject']}\n")
-            f.write(f"Date: {log_entry['thread_date']}\n")
-            f.write("\nSummary:\n")
-            f.write(json.dumps(log_entry['summary'], ensure_ascii=False, indent=2))
-            f.write("\n\n" + "="*50 + "\n\n")
+        log_message = (
+            f"=== {log_entry['timestamp']} - Thread Summary ===\n"
+            f"Thread ID: {log_entry['thread_id']}\n"
+            f"Subject: {log_entry['thread_subject']}\n"
+            f"Date: {log_entry['thread_date']}\n"
+            f"\nSummary:\n"
+            f"{json.dumps(summary_data['summary'], ensure_ascii=False, indent=2)}\n"
+            f"\nAction: {summary_data['action']}\n"
+            f"\nRationale: {summary_data['rationale']}\n"
+            f"\nParticipants: {summary_data['participants']}\n"
+            f"\n{'='*50}\n\n"
+        )
+        logger.info(log_message)
+
+        # Display summary in console
+        self.stdout.write(self.style.SUCCESS("\nThread Summary:"))
+        self.stdout.write(f"\nSummary: {summary_data['summary']}")
+        self.stdout.write(f"\nAction: {summary_data['action']}")
+        self.stdout.write(f"\nRationale: {summary_data['rationale']}")
+        self.stdout.write("\n\nParticipants:")
+        for participant in summary_data['participants']:
+            self.stdout.write(f"\n- {participant['name']} ({participant['email']})")
+            self.stdout.write(f"  Role: {participant['role in the thread']}")
+            self.stdout.write(f"  Updated Knowledge: {participant['updated_knowledge']}")
 
 
 
