@@ -2,49 +2,11 @@
 from django.core.management.base import BaseCommand
 from core.models import SystemParameter, Thread, Email, Label, Contact, EmailAddress, EmailString
 from core.gmail_helper import gmail_helper
+from core.utils import is_calendar_invite
 from datetime import datetime, timedelta
 from pytz import timezone
 import re
 import unicodedata
-
-def _is_calendar_invite(message):
-    """Check if an email is a calendar invite or attendance notification.
-    Returns True if the email appears to be a calendar-related message."""
-    # Check for common calendar invite indicators in headers
-    headers = message.get('payload', {}).get('headers', [])
-    for header in headers:
-        if header['name'].lower() in ['x-microsoft-cdo-busystatus', 'x-microsoft-cdo-intendedbusystatus']:
-            return True
-        if header['name'].lower() == 'content-class' and header['value'].lower() == 'urn:content-classes:calendarmessage':
-            return True
-        if header['name'].lower() == 'x-microsoft-cdo-messageclass' and 'ipm.schedule.meeting' in header['value'].lower():
-            return True
-
-    # Check for calendar-related content in the body
-    body = message.get('Body', '').lower()
-    calendar_indicators = [
-        'calendar invitation',
-        'calendar event',
-        'meeting invitation',
-        'meeting request',
-        'invitation to',
-        'you have been invited',
-        'you are invited',
-        'accept this invitation',
-        'decline this invitation',
-        'tentative',
-        'when:',
-        'where:',
-        'calendar:',
-        'organizer:',
-        'attendees:',
-        'ics file',
-        'ical file',
-        'calendar.ics',
-        'calendar.ical'
-    ]
-    
-    return any(indicator in body for indicator in calendar_indicators)
 
 def _process_email(message, thread):
     """ This method will process one email
@@ -116,7 +78,11 @@ def _process_email(message, thread):
         email_obj.labels.add(label_obj)
 
     # Check if this is a calendar invite and add the Calendar label if needed
-    if _is_calendar_invite(message):
+    if is_calendar_invite(
+        subject=message['Subject'],
+        body=message['Body'],
+        headers=message.get('payload', {}).get('headers', [])
+    ):
         calendar_label, created = Label.objects.get_or_create(
             name="Calendar",
             defaults={
