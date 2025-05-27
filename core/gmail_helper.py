@@ -95,8 +95,9 @@ def _extract_body_from_gmail_message(payload):
         '\u202A': '',     # LEFT-TO-RIGHT EMBEDDING
         '\u202B': '',     # RIGHT-TO-LEFT EMBEDDING
         '\u202C': '',     # POP DIRECTIONAL FORMATTING
-        '\u202D': '',     # LEFT-TO-RIGHT OVERRIDE
+        '\u202D': '',
         '\u202E': '',     # RIGHT-TO-LEFT OVERRIDE
+        '\u034F': '',     # COMBINING GRAPHEME JOINER
     }
 
     # Replace all special space characters
