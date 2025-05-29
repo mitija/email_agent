@@ -32,7 +32,7 @@ class Command(BaseCommand):
         threads = Thread.objects.filter(
                 last_email__labels__name="CATEGORY_PERSONAL"
         ).exclude(
-                last_email__labels__name="CALENDAR"
+                last_email__labels__name="Calendar"
         ).filter(
                 last_email__threadsummary__isnull=True
         ).distinct() # type: ignore[attr-defined]
@@ -46,7 +46,9 @@ class Command(BaseCommand):
         logger.info(f"Processing Thread - ID: {thread.id}, Subject: {thread.subject}")
         logger.info("Emails in thread:")
         for email in thread.email_set.all():
+            labels = [label.name for label in email.labels.all()]
             logger.info(f"- Email ID: {email.id}, From: {email.sender_str}, Subject: {email.subject}, Date: {email.date}")
+            logger.info(f"  Labels: {', '.join(labels) if labels else 'None'}")
 
         self.stdout.write(self.style.SUCCESS(f"Thread ID: {thread.id} - Subject: {thread.subject} - Date: {thread.date}")) # type: ignore[attr-defined]
 
