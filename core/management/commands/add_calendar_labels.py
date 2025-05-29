@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from core.models import Email, Label
-from core.management.commands.fetch_email import _is_calendar_invite
+from core.utils import is_calendar_invite
 
 class Command(BaseCommand):
     help = "Process existing emails and add Calendar label where appropriate"
@@ -40,28 +40,40 @@ class Command(BaseCommand):
             if not emails:
                 break
 
-            for email in emails:
-                # Create a message-like dict with the necessary fields
-                message = {
-                    'id': email.gmail_message_id,
-                    'payload': {
-                        'headers': [
-                            {'name': 'From', 'value': email.sender_str.original_string},
-                            {'name': 'Subject', 'value': email.subject},
-                            {'name': 'To', 'value': ', '.join(to.original_string for to in email.to_str.all())},
-                            {'name': 'Cc', 'value': ', '.join(cc.original_string for cc in email.cc_str.all())},
-                        ]
-                    },
-                    'Body': email.body,
-                }
+            self.stdout.write(f"Processing batch of {len(emails)} emails...")
 
+            for email in emails:
+                # Create headers list
+                headers = [
+                    {'name': 'From', 'value': email.sender_str.original_string},
+                    {'name': 'Subject', 'value': email.subject},
+                    {'name': 'To', 'value': ', '.join(to.original_string for to in email.to_str.all())},
+                    {'name': 'Cc', 'value': ', '.join(cc.original_string for cc in email.cc_str.all())},
+                ]
+
+                # Debug logging
+                self.stdout.write(f"\nChecking email:")
+                self.stdout.write(f"ID: {email.gmail_message_id}")
+                self.stdout.write(f"Subject: '{email.subject}'")
+                self.stdout.write(f"From: {email.sender_str.original_string}")
+                
                 # Check if it's a calendar invite
-                if _is_calendar_invite(message):
+                if is_calendar_invite(
+                    subject=email.subject,
+                    body=email.body,
+                    headers=headers
+                ):
                     email.labels.add(calendar_label)
                     total_updated += 1
                     self.stdout.write(
                         self.style.SUCCESS(
                             f'Added Calendar label to email: {email.subject} (ID: {email.gmail_message_id})'
+                        )
+                    )
+                else:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f'Not a calendar invite: {email.subject} (ID: {email.gmail_message_id})'
                         )
                     )
 
