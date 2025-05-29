@@ -56,6 +56,9 @@ def is_calendar_invite(subject, body, headers=None):
         if subject.startswith(indicator) or subject.startswith(f"{indicator}:"):
             return True
 
+    print(f"Subject: {subject}")
+    print("Not seen as a calendar invite")
+
     # Check body for calendar-related content
     body = body.lower()
     calendar_indicators = [

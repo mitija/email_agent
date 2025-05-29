@@ -41,6 +41,13 @@ class Command(BaseCommand):
         if not thread:
             self.stdout.write(self.style.SUCCESS("No threads found")) # type: ignore[attr-defined]
             return
+
+        # Log thread details and emails
+        logger.info(f"Processing Thread - ID: {thread.id}, Subject: {thread.subject}")
+        logger.info("Emails in thread:")
+        for email in thread.email_set.all():
+            logger.info(f"- Email ID: {email.id}, From: {email.sender_str}, Subject: {email.subject}, Date: {email.date}")
+
         self.stdout.write(self.style.SUCCESS(f"Thread ID: {thread.id} - Subject: {thread.subject} - Date: {thread.date}")) # type: ignore[attr-defined]
 
         # Now we create a summary for the thread

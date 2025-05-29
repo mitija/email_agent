@@ -36,20 +36,14 @@ class Command(BaseCommand):
         
         while True:
             # Get a batch of emails that don't have the Calendar label
-            emails = Email.objects.exclude(labels=calendar_label).order_by('id')[offset:offset + batch_size]
+            #emails = Email.objects.exclude(labels=calendar_label).order_by('id')[offset:offset + batch_size]
+            emails = Email.objects.order_by('id')[offset:offset + batch_size]
             if not emails:
                 break
 
             self.stdout.write(f"Processing batch of {len(emails)} emails...")
 
             for email in emails:
-                # Create headers list
-                headers = [
-                    {'name': 'From', 'value': email.sender_str.original_string},
-                    {'name': 'Subject', 'value': email.subject},
-                    {'name': 'To', 'value': ', '.join(to.original_string for to in email.to_str.all())},
-                    {'name': 'Cc', 'value': ', '.join(cc.original_string for cc in email.cc_str.all())},
-                ]
 
                 # Debug logging
                 self.stdout.write(f"\nChecking email:")
@@ -61,7 +55,6 @@ class Command(BaseCommand):
                 if is_calendar_invite(
                     subject=email.subject,
                     body=email.body,
-                    headers=headers
                 ):
                     email.labels.add(calendar_label)
                     total_updated += 1
