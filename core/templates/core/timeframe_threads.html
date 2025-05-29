@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div class="px-4 py-6 sm:px-0">
+        <div class="mb-6">
+            <h1 class="text-2xl font-semibold text-gray-900">Threads by Timeframe</h1>
+            <div class="mt-4 flex space-x-4">
+                <a href="?timeframe=1h" class="px-4 py-2 rounded-md {% if timeframe == '1h' %}bg-blue-500 text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}">
+                    Last Hour
+                </a>
+                <a href="?timeframe=8h" class="px-4 py-2 rounded-md {% if timeframe == '8h' %}bg-blue-500 text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}">
+                    Last 8 Hours
+                </a>
+                <a href="?timeframe=12h" class="px-4 py-2 rounded-md {% if timeframe == '12h' %}bg-blue-500 text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}">
+                    Last 12 Hours
+                </a>
+                <a href="?timeframe=24h" class="px-4 py-2 rounded-md {% if timeframe == '24h' %}bg-blue-500 text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %}">
+                    Last 24 Hours
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-white shadow overflow-hidden sm:rounded-md">
+            <ul class="divide-y divide-gray-200">
+                {% for thread in threads %}
+                <li>
+                    <a href="/threads/{{ thread.id }}/" class="block hover:bg-gray-50">
+                        <div class="px-4 py-4 sm:px-6">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-blue-600 truncate">
+                                        {{ thread.subject }}
+                                    </p>
+                                    <p class="mt-2 flex items-center text-sm text-gray-500">
+                                        <span class="truncate">{{ thread.snippet }}</span>
+                                    </p>
+                                </div>
+                                <div class="ml-4 flex-shrink-0">
+                                    <div class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        {% if thread.action == 'reply' %}bg-green-100 text-green-800
+                                        {% elif thread.action == 'forward' %}bg-blue-100 text-blue-800
+                                        {% elif thread.action == 'archive' %}bg-gray-100 text-gray-800
+                                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                        {{ thread.action|title }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2 sm:flex sm:justify-between">
+                                <div class="sm:flex">
+                                    <p class="flex items-center text-sm text-gray-500">
+                                        {{ thread.last_message_date|date:"M d, Y H:i" }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </li>
+                {% empty %}
+                <li class="px-4 py-4 sm:px-6 text-center text-gray-500">
+                    No threads found in the selected timeframe.
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %} 
