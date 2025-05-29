@@ -81,10 +81,11 @@ class Command(BaseCommand):
             f"Subject: {log_entry['thread_subject']}\n"
             f"Date: {log_entry['thread_date']}\n"
             f"\nSummary:\n"
-            f"{json.dumps(summary_data['summary'], ensure_ascii=False, indent=2)}\n"
+            f"{summary_data['summary']}\n"
             f"\nAction: {summary_data['action']}\n"
             f"\nRationale: {summary_data['rationale']}\n"
-            f"\nParticipants: {summary_data['participants']}\n"
+            f"\nParticipants:\n"
+            f"{json.dumps(summary_data['participants'], indent=2, ensure_ascii=False)}\n"
             f"\n{'='*50}\n\n"
         )
         logger.info(log_message)

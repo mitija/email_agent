@@ -66,4 +66,39 @@ def search_similar_contacts(name, email):
         print(f"CONTACT: MULTIPLE CONTACTS FOUND for {name}: {possible_contacts}")
 
     # If we have not found anyone
-    return None 
+    return None
+
+def remove_quoted_text(body: str) -> str:
+    """Removes quoted text from email body.
+    
+    Handles various email client quote patterns including:
+    - "On ... wrote:" (Gmail)
+    - "From: ... Sent: ... To: ... Subject: ..." (Outlook)
+    - "> " (common quote marker)
+    - "-----Original Message-----" (Outlook)
+    - Outlook header pattern with From, Sent, To, Cc, Subject
+    
+    Args:
+        body (str): The email body text
+        
+    Returns:
+        str: The email body without quoted text
+    """
+    # First, try to find the last occurrence of common quote markers
+    patterns = [
+        r"On.*wrote:",  # Gmail style
+        r"From:.*\nSent:.*\nTo:.*\nSubject:",  # Outlook style
+        r"-----Original Message-----",  # Outlook style
+        r"^>.*$",  # Common quote marker
+        r"From:.*\nSent:.*\nTo:.*\n(?:Cc:.*\n)?Subject:",  # Outlook header pattern
+    ]
+    
+    # Find the earliest occurrence of any quote pattern
+    earliest_quote = len(body)
+    for pattern in patterns:
+        matches = list(re.finditer(pattern, body, re.MULTILINE))
+        if matches:
+            earliest_quote = min(earliest_quote, matches[0].start())
+    
+    # Return only the content before the first quote
+    return body[:earliest_quote].strip() 
