@@ -32,14 +32,18 @@ def enhance_thread_data(thread: Thread, include_summary: bool = False) -> Dict[s
     first_email = thread.email_set.order_by('date').first()
     last_email = thread.last_email
     
-    # Get all tags/labels
-    tags = [label.name for label in thread.labels.all()]
+    # Get all tags/labels from emails in the thread
+    tags = set()
+    for email in thread.email_set.all():
+        tags.update(label.name for label in email.labels.all())
+    tags = sorted(list(tags))
     
     # Get participant information
     active_participants, other_participants = get_thread_participants(thread)
     
     enhanced_data = {
         'id': thread.id,
+        'date': first_email.date if first_email else None,
         'subject': thread.subject,
         'snippet': last_email.snippet if last_email else '',
         'tags': tags,

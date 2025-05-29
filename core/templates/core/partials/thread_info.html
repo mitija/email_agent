@@ -5,6 +5,12 @@ Expects a thread object with the following properties:
 - thread.active_participants: List of active participants
 - thread.other_participants: List of other participants
 {% endcomment %}
+<div class="flex items-center gap-2">
+    <span class="font-semibold text-gray-800">{{ thread.subject }}</span>
+    {% if thread.has_summary %}
+    <span class="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700">Summarized</span>
+    {% endif %}
+</div>
 
 <span class="text-xs text-gray-500">{{ thread.date|date:'M d, Y, g:i a' }}</span>
 
@@ -33,10 +39,10 @@ Expects a thread object with the following properties:
 </div>
 {% endif %} 
 
-{% if thread.labels %}
+{% if thread.tags %}
 <div class="flex flex-wrap gap-1 mt-1">
-    {% for label in thread.labels %}
-    <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700">{{ label }}</span>
+    {% for tag in thread.tags %}
+    <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700">{{ tag }}</span>
     {% endfor %}
 </div>
 {% endif %}
