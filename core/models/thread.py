@@ -35,6 +35,15 @@ class Thread(TimestampedModel):
     def number_of_emails(self):
         return self.email_set.count()
 
+    @property
+    def initiated_by(self):
+        first_email = self.first_email
+        return "xxxx"
+
+    @property
+    def first_email(self):
+        return self.email_set.first()
+
     def __str__(self):
         if self.email_set.exists(): # type: ignore[attr-defined]
             return f"Thread {self.email_set.first().subject} - {self.email_set.first().date}" # type: ignore[attr-defined]

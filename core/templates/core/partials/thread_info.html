@@ -1,0 +1,42 @@
+{% comment %}
+Thread information partial template that can be included in other templates.
+Expects a thread object with the following properties:
+- thread.initiated_by: The first sender
+- thread.active_participants: List of active participants
+- thread.other_participants: List of other participants
+{% endcomment %}
+
+<span class="text-xs text-gray-500">{{ thread.date|date:'M d, Y, g:i a' }}</span>
+
+<div class="mt-2">
+    <p class="flex items-center text-sm text-gray-500">
+        <span class="font-medium">Initiated by:</span>
+        <span class="ml-1">{{ thread.initiated_by }}</span>
+    </p>
+</div>
+
+{% if thread.active_participants %}
+<div class="mt-2">
+    <p class="text-sm text-gray-500">
+        <span class="font-medium">Active participants:</span>
+        <span class="ml-1">{{ thread.active_participants|join:", " }}</span>
+    </p>
+</div>
+{% endif %}
+
+{% if thread.other_participants %}
+<div class="mt-1">
+    <p class="text-sm text-gray-500">
+        <span class="font-medium">Other participants:</span>
+        <span class="ml-1">{{ thread.other_participants|join:", " }}</span>
+    </p>
+</div>
+{% endif %} 
+
+{% if thread.labels %}
+<div class="flex flex-wrap gap-1 mt-1">
+    {% for label in thread.labels %}
+    <span class="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700">{{ label }}</span>
+    {% endfor %}
+</div>
+{% endif %}

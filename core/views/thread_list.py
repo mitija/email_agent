@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.db import models
+from core.utils.thread_utils import enhance_thread_data
 
 @login_required
 def get_labels(request):
@@ -54,41 +55,11 @@ def thread_list(request):
     paginator = Paginator(threads, 10)  # Show 10 threads per page
     page_obj = paginator.get_page(page_number)
     
-    thread_data = []
     # Count all summarized threads, not just those on current page
     summarized_count = ThreadSummary.objects.values('thread').distinct().count()
     
-    for thread in page_obj:
-        first_email = thread.email_set.first()
-        has_summary = ThreadSummary.objects.filter(thread=thread).exists()
-        if has_summary:
-            summarized_count += 1
-        latest_summary = ThreadSummary.objects.filter(thread=thread).order_by('-timestamp').first()
-        
-        # Get all participants
-        all_participants = thread.participants
-        
-        # Get active participants (those who sent messages)
-        active_participants = set()
-        for email in thread.email_set.all():
-            active_participants.add(email.sender_str.original_string)
-        
-        # Get other participants (those who didn't send messages)
-        other_participants = set(p.original_string for p in all_participants) - active_participants
-        
-        thread_data.append({
-            'id': thread.id,
-            'subject': thread.subject,
-            'date': thread.created_at,
-            'has_summary': has_summary,
-            'summary': latest_summary.summary if latest_summary else None,
-            'action': latest_summary.action if latest_summary else None,
-            'rationale': latest_summary.rationale if latest_summary else None,
-            'labels': [label.name for label in first_email.labels.all()] if first_email else [],
-            'first_sender': first_email.sender_str.original_string if first_email else None,
-            'active_participants': sorted(list(active_participants)),
-            'other_participants': sorted(list(other_participants)),
-        })
+    # Enhance thread data with additional information including summaries
+    thread_data = [enhance_thread_data(thread, include_summary=True) for thread in page_obj]
     
     return render(request, 'core/thread_list.html', {
         'threads': thread_data,

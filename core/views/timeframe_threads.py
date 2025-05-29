@@ -3,6 +3,9 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from core.models.thread import Thread
 from core.models.email import Email
+from django.db.models import Min, Max
+from django.utils import timezone
+from core.utils.thread_utils import enhance_thread_data
 
 @login_required
 def timeframe_threads(request):
@@ -10,7 +13,7 @@ def timeframe_threads(request):
     timeframe = request.GET.get('timeframe', '24h')
     
     # Calculate the start time based on the timeframe
-    now = datetime.now()
+    now = timezone.now()
     if timeframe == '1h':
         start_time = now - timedelta(hours=1)
     elif timeframe == '8h':
@@ -25,13 +28,16 @@ def timeframe_threads(request):
         date__gte=start_time
     ).values_list('thread_id', flat=True).distinct()
     
-    # Get threads that contain these emails
+    # Get threads that contain these emails with additional information
     threads = Thread.objects.filter(
         id__in=recent_emails
-    ).order_by('-last_email__date')
+    ).prefetch_related('labels', 'email_set').order_by('-last_email__date')
+    
+    # Enhance thread data with additional information
+    enhanced_threads = [enhance_thread_data(thread) for thread in threads]
     
     context = {
-        'threads': threads,
+        'threads': enhanced_threads,
         'timeframe': timeframe
     }
     

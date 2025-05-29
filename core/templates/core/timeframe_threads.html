@@ -46,13 +46,44 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Tags -->
+                            {% if thread.tags %}
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                {% for tag in thread.tags %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                    {{ tag }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <!-- Thread Timeline -->
                             <div class="mt-2 sm:flex sm:justify-between">
-                                <div class="sm:flex">
+                                <div class="sm:flex sm:space-x-4">
                                     <p class="flex items-center text-sm text-gray-500">
-                                        {{ thread.last_message_date|date:"M d, Y H:i" }}
+                                        <span class="font-medium">First:</span>
+                                        <span class="ml-1">{{ thread.first_message_date|date:"M d, Y H:i" }}</span>
+                                    </p>
+                                    <p class="flex items-center text-sm text-gray-500">
+                                        <span class="font-medium">Last:</span>
+                                        <span class="ml-1">{{ thread.last_message_date|date:"M d, Y H:i" }}</span>
                                     </p>
                                 </div>
                             </div>
+
+                            <!-- Include thread info partial -->
+                            {% include "core/partials/thread_info.html" with thread=thread %}
+
+                            <!-- Summary -->
+                            {% if thread.summary %}
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-600">
+                                    <span class="font-medium">Summary:</span>
+                                    <span class="ml-1">{{ thread.summary }}</span>
+                                </p>
+                            </div>
+                            {% endif %}
                         </div>
                     </a>
                 </li>
