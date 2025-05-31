@@ -1,5 +1,5 @@
 from django.test import TestCase
-from core.models.utils import remove_quoted_text
+from core.utils import remove_quoted_text
 
 class TestRemoveQuotedText(TestCase):
     def test_gmail_quote_pattern(self):

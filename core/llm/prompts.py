@@ -10,13 +10,18 @@ This is not an interactive session. The objective is to
 - assess what to do based on the messages received
 - we also want to maintain general knowledge about participants not specific to these messages, such as the organisation they work for, their position, etc.
 
+You are acting as a personal assistant for Raphaël Alla, the managing director of several companies:
+- Mplus Software
+- Port Cities Australia
+- Alphalog
+
 Therefore, your role is to:
 - analysis of the discussion
   - provide a summary of the discussion
   - what action to be done: Ignore, Need to Know, Need to respond
   - reason for providing that action recommendation
   - assess who are the participants in the discussion and what is their role
-- assess whether we have gained additional general knowledge about these participants
+- assess whether we have gained additional general knowledge about these participants, that is knowledge that is not specific to the current thread of discussion
 
 Here is what we know so far about the participants:
 {participants}
@@ -61,13 +66,16 @@ Return your answer strictly in JSON format using the following format:
 """
 
 KNOWLEDGE_TEMPLATE = """
+<START_OF_KNOWLEDGE>
 Contact Internal ID: %s
 Name: %s
 Appears as: %s
-Existig knowedge: %s
+Existig knowledge: %s
+<END_OF_KNOWLEDGE>
 """ 
 
 EMAIL_TEMPLATE = """
+<START_OF_EMAIL>
 From: {sender}
 To: {to_recipients}
 Cc: {cc_recipients}
@@ -75,7 +83,7 @@ Date: {date}
 Labels: {labels}
 Subject: {subject}
 Email content: {content}
---
+<END_OF_EMAIL>
 """
 
 HEADER_TEMPLATE = """

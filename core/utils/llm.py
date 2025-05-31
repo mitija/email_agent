@@ -1,23 +1,9 @@
-# -*- coding: utf-8 -*-
-"""
-This module contains utility functions for the LangGraph email processing system.
-It provides LLM initialization and JSON handling utilities.
-"""
 from langchain_ollama import OllamaLLM
 from langchain.prompts import PromptTemplate
-from core.llm.prompts import PROMPT_SUMMARY
 import json
 import logging
 from datetime import datetime
 import codecs
-
-# Initialize LLM instances
-llm = OllamaLLM(model="gemma3:12b-it-qat")
-summary_prompt = PromptTemplate(
-    input_variables=["conversation", "participants"],
-    template=PROMPT_SUMMARY
-)
-summary_chain = summary_prompt | llm
 
 # Configure logging with UTF-8 encoding
 logging.basicConfig(
@@ -27,9 +13,24 @@ logging.basicConfig(
     encoding='utf-8'  # Explicitly set UTF-8 encoding
 )
 
+def get_llm_instances():
+    """Get LLM instances lazily to avoid circular imports"""
+    from core.llm.prompts import PROMPT_SUMMARY
+    
+    llm = OllamaLLM(model="gemma3:12b-it-qat")
+    summary_prompt = PromptTemplate(
+        input_variables=["conversation", "participants"],
+        template=PROMPT_SUMMARY
+    )
+    summary_chain = summary_prompt | llm
+    
+    return llm, summary_chain
+
+# Initialize LLM instances
+llm, summary_chain = get_llm_instances()
+
 def log_llm_prompt(prompt_name, prompt_input, prompt_template=None):
-    """
-    Log LLM prompts to a file with timestamp and context.
+    """Log LLM prompts to a file with timestamp and context.
     
     Args:
         prompt_name (str): Name/identifier of the prompt
@@ -69,9 +70,13 @@ def log_llm_prompt(prompt_name, prompt_input, prompt_template=None):
         f.write("\n\n" + "="*50 + "\n\n")
 
 def sanitize_json(text):
-    """
-    Extract JSON from the text.
-    This function will remove any character before the first '{' character and the last '}'
+    """Extract JSON from the text.
+    
+    Args:
+        text (str): The text containing JSON
+        
+    Returns:
+        str: The extracted JSON string
     """
     # Remove any character before the first '{' character and the last '}'
     text = text[text.find('{'):]

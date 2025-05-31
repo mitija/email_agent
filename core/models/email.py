@@ -3,7 +3,7 @@ from django.db import models
 from .email_string import EmailString
 from .label import Label
 from .base import TimestampedModel
-from .utils import remove_quoted_text
+from core.utils import remove_quoted_text
 
 class Email(TimestampedModel):
     gmail_message_id = models.CharField(max_length=255, unique=True)

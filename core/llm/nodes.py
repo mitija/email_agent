@@ -8,7 +8,6 @@ import sys
 from string import Template
 from langchain.prompts import PromptTemplate
 from core.llm.types import ParticipantSet
-from core.llm.utils import sanitize_json, llm, summary_chain, log_llm_prompt
 from core.llm.prompts import PROMPT_PARTICIPANT_KNOWLEDGE, EMAIL_TEMPLATE, HEADER_TEMPLATE, PROMPT_SUMMARY
 # Import models lazily to prevent AppRegistryNotReady errors
 from django.apps import apps
@@ -16,6 +15,11 @@ from django.apps import apps
 def get_thread_summary_model():
     """Get the ThreadSummary model lazily"""
     return apps.get_model('core', 'ThreadSummary')
+
+def get_llm_utils():
+    """Get LLM utilities lazily to avoid circular imports"""
+    from core.utils import sanitize_json, llm, summary_chain, log_llm_prompt
+    return sanitize_json, llm, summary_chain, log_llm_prompt
 
 def extract_thread_node(state):
     """Extract thread information and format messages"""
@@ -63,6 +67,8 @@ def gather_knowledge_node(state):
 
 def summarize_thread_node(state):
     """Generate summary for the thread"""
+    sanitize_json, llm, summary_chain, log_llm_prompt = get_llm_utils()
+    
     prompt_input = {
         "conversation": state["conversation"],
         "participants": state["knowledge"],

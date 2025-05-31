@@ -1,7 +1,7 @@
 from django.db import models
 from .email_address import EmailAddress
 from .contact import Contact
-from .utils import extract_email_and_name, search_similar_contacts
+from core.utils import extract_email_and_name, search_similar_contacts
 from .base import TimestampedModel
 
 class EmailString(TimestampedModel):

@@ -1,11 +1,14 @@
 from collections import Counter
 from typing import List, Dict, Any
-from core.models import Thread, Email
 
-def get_thread_participants(thread: Thread) -> tuple[List[str], List[str]]:
-    """
-    Get active and other participants from a thread.
-    Returns a tuple of (active_participants, other_participants)
+def get_thread_participants(thread) -> tuple[List[str], List[str]]:
+    """Get active and other participants from a thread.
+    
+    Args:
+        thread: The thread to analyze
+        
+    Returns:
+        tuple: A tuple containing (active_participants, other_participants)
     """
     all_participants = []
     for email in thread.email_set.all():
@@ -24,11 +27,19 @@ def get_thread_participants(thread: Thread) -> tuple[List[str], List[str]]:
     
     return sorted(active_participants), sorted(other_participants)
 
-def enhance_thread_data(thread: Thread, include_summary: bool = False) -> Dict[str, Any]:
+def enhance_thread_data(thread, include_summary: bool = False) -> Dict[str, Any]:
+    """Enhance thread data with additional information.
+    
+    Args:
+        thread: The thread to enhance
+        include_summary (bool, optional): Whether to include thread summary. Defaults to False.
+        
+    Returns:
+        dict: A dictionary with enhanced thread data
     """
-    Enhance thread data with additional information.
-    Returns a dictionary with enhanced thread data.
-    """
+    # Import here to avoid circular imports
+    from core.models import ThreadSummary
+    
     first_email = thread.email_set.order_by('date').first()
     last_email = thread.last_email
     
@@ -55,7 +66,6 @@ def enhance_thread_data(thread: Thread, include_summary: bool = False) -> Dict[s
     }
     
     if include_summary:
-        from core.models import ThreadSummary
         latest_summary = ThreadSummary.objects.filter(thread=thread).order_by('-timestamp').first()
         enhanced_data.update({
             'summary': latest_summary.summary if latest_summary else None,

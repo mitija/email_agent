@@ -8,7 +8,7 @@ import bleach
 import markdownify
 import base64
 import re
-from .utils import normalize_whitespace
+from core.utils import normalize_whitespace
 
 def _extract_body_from_gmail_message(payload):
     text_body = None

@@ -7,6 +7,7 @@ from .thread import Thread
 from .thread_summary import ThreadSummary
 from .system_parameter import SystemParameter
 
+# Export all models
 __all__ = [
     'EmailAddress',
     'Contact',

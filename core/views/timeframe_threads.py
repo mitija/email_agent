@@ -5,7 +5,7 @@ from core.models.thread import Thread
 from core.models.email import Email
 from django.db.models import Min, Max
 from django.utils import timezone
-from core.utils.thread_utils import enhance_thread_data
+from core.utils import enhance_thread_data
 
 @login_required
 def timeframe_threads(request):
